@@ -201,15 +201,17 @@ def signup():
         """
 
         try:
-            import threading
-            mail.send(msg)            
+            mail.send(msg)
             print("✅ Email sent successfully")
-        except Exception as e:
-            print("⚠️ Email failed, OTP:", otp)
-            print("Error:", e)
 
-        flash("OTP sent to your email. Please verify.")
-        return redirect(f"/verify_signup/{email}")
+            flash("OTP sent to your email. Please verify.")
+            return redirect(f"/verify_signup/{email}")
+
+        except Exception as e:
+            print("❌ EMAIL ERROR:", e)
+
+            flash("Failed to send OTP. Please try again.", "danger")
+            return redirect("/signup")
 
     return render_template("signup.html")
 
