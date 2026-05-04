@@ -1,17 +1,10 @@
-import os
-import threading
-from dotenv import load_dotenv
-import resend
-resend.api_key = os.environ.get("RESEND_API_KEY")
-load_dotenv()
-
 import random
 from datetime import datetime, timedelta, UTC
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-# from flask_mail import Mail, Message
+from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import os
@@ -19,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 # CREATE APP ONLY ONCE
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["SECRET_KEY"] = "secret123"
 
 # UPLOAD CONFIG
 UPLOAD_FOLDER = os.path.join("static", "uploads")
@@ -35,20 +28,19 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # MAIL CONFIG
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
-app.config["MAIL_PORT"] = 465
-app.config["MAIL_USE_TLS"] = False
-app.config["MAIL_USE_SSL"] = True
+app.config["MAIL_PORT"] = 587
+app.config["MAIL_USE_TLS"] = True
 
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
-app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_USERNAME")
+app.config["MAIL_USERNAME"] = "official.wecapture@gmail.com"
+app.config["MAIL_PASSWORD"] = "zeydphphmxzrubrg"
+app.config["MAIL_DEFAULT_SENDER"] = "We Capture <official.wecapture@gmail.com>"
 
 # ADMIN LOGIN
-ADMIN_EMAIL = os.environ.get("MAIL_USERNAME")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+ADMIN_EMAIL = app.config["MAIL_USERNAME"]
+ADMIN_PASSWORD = "wecapture@2627"
 
 db = SQLAlchemy(app)
-# mail = Mail(app)
+mail = Mail(app)
 
 
 # ---------------- MODELS ----------------
@@ -83,8 +75,8 @@ class Booking(db.Model):
     showroom_address = db.Column(db.String(250))
     delivery_location = db.Column(db.String(200))
 
-    sales_consultant_name = db.Column(db.String(100))
-    sales_consultant_phone = db.Column(db.String(20))
+    salesperson_name = db.Column(db.String(100))
+    salesperson_phone = db.Column(db.String(20))
 
     delivery_date = db.Column(db.Date)
     delivery_time = db.Column(db.Time)
@@ -203,29 +195,14 @@ def signup():
         """
 
         try:
-            resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": email,
-                "subject": "We Capture OTP Verification",
-                "html": f"""
-                <h2>We Capture 🎥</h2>
-                <p>Hello,</p>
-                <p>Your OTP is:</p>
-                <h1 style="color:#d7ad4b;">{otp}</h1>
-                <p>This OTP is valid for 5 minutes.</p>
-                """
-            })
-
-            print("✅ Email sent via Resend")
-
-            flash("OTP sent to your email. Please verify.")
-            return redirect(f"/verify_signup/{email}")
-
+            mail.send(msg)
+            print("✅ Email sent successfully")
         except Exception as e:
-            print("❌ RESEND ERROR:", e)
+            print("⚠️ Email failed, OTP:", otp)
+            print("Error:", e)
 
-            flash("Failed to send OTP", "danger")
-            return redirect("/signup")
+        flash("OTP sent to your email. Please verify.")
+        return redirect(f"/verify_signup/{email}")
 
     return render_template("signup.html")
 
@@ -333,19 +310,12 @@ def forgot_password():
         """
 
         try:
-            resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": email,
-                "subject": "We Capture - Reset Password OTP",
-                "html": f"""
-                <h2>We Capture 🎥</h2>
-                <p>Your OTP is:</p>
-                <h1 style="color:#d7ad4b;">{otp}</h1>
-                <p>Valid for 5 minutes</p>
-                """
-            })
+            mail.send(msg)
         except Exception as e:
-            print("❌ RESEND ERROR:", e)
+            print("OTP:", otp)
+            print("Error:", e)
+
+        return redirect(f"/reset_password/{email}")
 
     return render_template("forgot_password.html")
 
@@ -453,8 +423,8 @@ def booking():
             showroom_name=request.form["showroom_name"],
             showroom_address=request.form["showroom_address"],
             delivery_location=request.form["delivery_location"],
-            sales_consultant_name=request.form["sales_consultant_name"],
-            sales_consultant_phone=request.form["sales_consultant_phone"],
+            salesperson_name=request.form["salesperson_name"],
+            salesperson_phone=request.form["salesperson_phone"],
             delivery_date=datetime.strptime(request.form["delivery_date"], "%Y-%m-%d").date(),
             delivery_time=datetime.strptime(request.form["delivery_time"], "%H:%M").time(),
             package_name=request.form["package_name"]
@@ -486,8 +456,8 @@ def booking():
 
         <hr>
 
-        <p><strong>Sales Consultant:</strong> {booking.sales_consultant_name}</p>
-        <p><strong>Sales Consultant Phone:</strong> {booking.sales_consultant_phone}</p>
+        <p><strong>Salesperson:</strong> {booking.salesperson_name}</p>
+        <p><strong>Salesperson Phone:</strong> {booking.salesperson_phone}</p>
 
         <hr>
 
@@ -503,20 +473,12 @@ def booking():
         """
 
         try:
-            resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": ADMIN_EMAIL,
-                "subject": "New Booking Received - We Capture",
-                "html": f"""
-                <h2>New Booking 🚗</h2>
-                <p>Name: {booking.full_name}</p>
-                <p>Phone: {booking.phone}</p>
-                <p>Email: {booking.email}</p>
-                <p>Package: {booking.package_name}</p>
-                """
-            })
+            mail.send(msg)
+            print("📩 Admin email sent")
         except Exception as e:
-            print("❌ RESEND ERROR:", e)
+            print("⚠️ Admin email failed:", e)
+
+        return redirect(f"/booking_success/{booking.id}")
 
     return render_template("booking.html", packages=PACKAGES)
 
@@ -602,7 +564,7 @@ def packages_page():
 
     return render_template("packages.html", packages=packages)
 
-@app.route("/adminlogin2627", methods=["GET", "POST"])
+@app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         email = request.form["email"]
@@ -834,4 +796,6 @@ def delete_review(id):
 # ---------------- RUN ----------------
 
 if __name__ == "__main__":
-    app.run()
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
