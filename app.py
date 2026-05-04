@@ -202,7 +202,7 @@ def signup():
         """
 
         try:
-            mail.send(msg)
+            #mail.send(msg)
             print("✅ Email sent successfully")
         except Exception as e:
             print("⚠️ Email failed, OTP:", otp)
@@ -317,7 +317,7 @@ def forgot_password():
         """
 
         try:
-            mail.send(msg)
+            #mail.send(msg)
         except Exception as e:
             print("OTP:", otp)
             print("Error:", e)
@@ -480,7 +480,7 @@ def booking():
         """
 
         try:
-            mail.send(msg)
+            #mail.send(msg)
             print("📩 Admin email sent")
         except Exception as e:
             print("⚠️ Admin email failed:", e)
@@ -640,7 +640,7 @@ def update_status(id, status):
         """
 
     try:
-        mail.send(msg)
+        #mail.send(msg)
         print("📩 Status email sent")
     except Exception as e:
         print("⚠️ Email failed:", e)
@@ -708,7 +708,7 @@ def send_query():
     """
 
     try:
-        mail.send(msg)
+        #mail.send(msg)
         flash("Query sent successfully!", "success")
     except Exception as e:
         print(e)
