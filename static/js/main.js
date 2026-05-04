@@ -13,7 +13,7 @@ if (navToggle && navLinks) {
 // ================= DOM READY =================
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ================= OTP INPUT =================
+    // OTP
     const inputs = document.querySelectorAll(".otp-container input");
     const hiddenInput = document.getElementById("otp");
 
@@ -30,29 +30,34 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
-});
 
-    // ================= STAR RATING =================
-document.addEventListener("DOMContentLoaded", () => {
+    // STAR RATING
     const stars = document.querySelectorAll(".star-rating span");
     const input = document.getElementById("ratingInput");
 
-    if (!stars.length || !input) return;
+    if (stars.length && input) {
+        let selectedRating = 0;
 
-    let selectedRating = 0;
+        stars.forEach((star, index) => {
+            star.addEventListener("click", () => {
+                selectedRating = index + 1;
 
-    stars.forEach((star, index) => {
-
-        // CLICK
-        star.addEventListener("click", () => {
-            selectedRating = index + 1;
-
-            stars.forEach((s, i) => {
-                s.classList.toggle("active", i < selectedRating);
+                stars.forEach((s, i) => {
+                    s.classList.toggle("active", i < selectedRating);
+                });
             });
         });
 
-    });
+        const form = document.querySelector(".review-form");
+
+        if (form) {
+            form.addEventListener("submit", () => {
+                input.value = selectedRating;
+            });
+        }
+    }
+
+});
 
     // 🔥 IMPORTANT: SET VALUE ON SUBMIT
     const form = document.querySelector(".review-form");
