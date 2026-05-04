@@ -1,0 +1,23 @@
+from datetime import datetime
+
+class Booking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer)
+
+    full_name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+
+    showroom_name = db.Column(db.String(150))
+    delivery_location = db.Column(db.String(200))
+
+    salesperson_name = db.Column(db.String(100))
+    salesperson_phone = db.Column(db.String(20))
+
+    delivery_date = db.Column(db.Date)
+    delivery_time = db.Column(db.Time)
+
+    package_name = db.Column(db.String(50))
+
+    # ✅ ADD THIS LINE
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

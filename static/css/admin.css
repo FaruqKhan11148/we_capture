@@ -1,0 +1,73 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #0f0f0f;
+    color: #fff;
+    margin: 0;
+}
+
+.header {
+    background: #111;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+}
+
+.header h1 {
+    margin: 0;
+    color: #d7ad4b;
+}
+
+.logout-btn {
+    background: #d7ad4b;
+    color: #000;
+    padding: 8px 14px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.container {
+    padding: 30px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th {
+    background: #1a1a1a;
+    color: #d7ad4b;
+    padding: 12px;
+    text-align: left;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #333;
+}
+
+tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+a {
+    text-decoration: none;
+    display: inline-block;
+    margin: 4px 0;
+}
+
+a[href*="Confirmed"] {
+    color: green;
+}
+
+a[href*="Completed"] {
+    color: blue;
+}
+
+a[href*="Cancelled"] {
+    color: red;
+}

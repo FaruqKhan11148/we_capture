@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+
+<body>
+
+<div class="header">
+    <h1>We Capture Admin 🚀</h1>
+    <a href="/admin/logout" class="logout-btn">Logout</a>
+</div>
+
+<div class="container">
+
+    <h2>All Bookings</h2>
+    <div style="margin-bottom:20px;">
+        <a href="/admin/upload_media" class="logout-btn">➕ Upload Media</a>
+    </div>
+
+    {% if bookings %}
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Showroom</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Package</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+
+        {% for b in bookings %}
+        <tr>
+            <td>{{ b.full_name }}</td>
+            <td>{{ b.phone }}</td>
+            <td>{{ b.showroom_name }}</td>
+            <td>{{ b.delivery_date }}</td>
+            <td>{{ b.delivery_time }}</td>
+            <td>{{ b.package_name }}</td>
+
+            <!-- STATUS -->
+            <td>
+                {% if b.status == "Pending" %}
+                    <span style="color:orange;">Pending</span>
+                {% elif b.status == "Confirmed" %}
+                    <span style="color:green;">Confirmed</span>
+                {% elif b.status == "Completed" %}
+                    <span style="color:blue;">Completed</span>
+                {% else %}
+                    <span style="color:red;">Cancelled</span>
+                {% endif %}
+            </td>
+
+            <!-- ACTION BUTTONS -->
+            <td>
+                <a href="/admin/update_status/{{ b.id }}/Confirmed">✔ Confirm</a><br>
+                <a href="/admin/update_status/{{ b.id }}/Completed">🚚 Complete</a><br>
+                <a href="/admin/update_status/{{ b.id }}/Cancelled">❌ Cancel</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No bookings yet.</p>
+    {% endif %}
+
+</div>
+
+<h2>Uploaded Media</h2>
+
+{% if media %}
+<table>
+    <tr>
+        <th>Preview</th>
+        <th>Type</th>
+        <th>Action</th>
+    </tr>
+
+    {% for m in media %}
+    <tr>
+        <td>
+            {% if m.media_type == "image" %}
+                <img src="{{ m.file_url }}" width="100">
+            {% else %}
+                <video width="120">
+                    <source src="{{ m.file_url }}" type="video/mp4">
+                </video>
+            {% endif %}
+        </td>
+
+        <td>{{ m.media_type }}</td>
+
+        <td>
+            <a href="/admin/delete_media/{{ m.id }}" style="color:red;">❌ Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No media uploaded yet.</p>
+{% endif %}
+
+</body>
+</html>

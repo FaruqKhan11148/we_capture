@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-shell">
+<div class="auth-panel">
+
+<h2>Login</h2>
+
+<form method="POST" class="form-stack">
+
+<input type="email" name="email" placeholder="Email" required>
+
+<!-- PASSWORD WITH TOGGLE -->
+<div class="password-wrapper">
+    <input type="password" name="password" id="loginPassword" placeholder="Password" required>
+    <span class="toggle-password" onclick="togglePassword('loginPassword')">👁️</span>
+</div>
+
+<button class="btn btn-gold">Login</button>
+
+<p><a href="/forgot_password">Forgot Password?</a></p>
+
+</form>
+
+</div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Packages | We Capture{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <p class="eyebrow">Packages</p>
+        <h1>Choose your cinematic delivery experience</h1>
+        <p>
+            From simple celebration moments to grand luxury reveals — 
+            every package is crafted to turn your delivery into a premium cinematic story.
+        </p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container package-grid">
+
+        {% for name, package in packages.items() %}
+        <article class="package-card">
+
+            <div>
+                <p class="package-label">
+                    {% if loop.index == 1 %}Starter
+                    {% elif loop.index == 2 %}Popular
+                    {% elif loop.index == 3 %}Premium
+                    {% else %}Luxury
+                    {% endif %}
+                </p>
+
+                <h2>{{ name }}</h2>
+
+                <p class="package-summary">
+                    {{ package.summary }}
+                </p>
+            </div>
+
+            <p class="price">{{ package.price }}</p>
+
+            <ul>
+                {% for feature in package.features %}
+                    <li>✔ {{ feature }}</li>
+                {% endfor %}
+            </ul>
+
+            <a class="btn btn-gold" href="{{ url_for('booking', package=name) }}">
+                Book Now
+            </a>
+
+        </article>
+        {% endfor %}
+
+    </div>
+</section>
+
+{% endblock %}

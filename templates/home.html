@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}We Capture | Your car, your moment{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-media" aria-hidden="true"></div>
+    <div class="container hero-content">
+        <p class="eyebrow">Cinematic delivery experiences</p>
+
+        <h1>Your Delivery. Your Spotlight.</h1>
+
+        <p class="hero-copy">
+        Turn your new car or bike delivery into a cinematic experience.  
+        From showroom pickup to stunning outdoor reveals, we capture every moment with precision, creativity, and style.
+        </p>
+
+        <div class="hero-actions">
+            <a class="btn btn-gold" href="{{ url_for('packages_page') }}">View Packages</a>
+            <a class="btn btn-outline" href="{{ url_for('booking') }}">Book Now</a>
+        </div>
+    </div>
+</section>
+
+<!-- LOCATION -->
+<section class="section location-alert">
+    <div class="container">
+        <div class="section-title-wrapper">
+            <h2 class="section-title">
+                <img src="https://img.icons8.com/?size=100&id=p5n5ZAUprZsA&format=png&color=000000" class="location-icon">
+                Service Availability
+            </h2>
+        </div>
+
+        <p>
+        We currently operate in <strong>Dakshina Kannada & Udupi</strong>.
+        </p>
+
+        <p>
+        If you're located elsewhere, feel free to reach out — we’ll get back to you with availability.
+        </p>
+
+        <button class="btn btn-gold" onclick="openQuery()">Send Query</button>
+    </div>
+</section>
+
+<!-- SERVICE -->
+<section class="section service-intro">
+    <div class="container two-column">
+
+        <!-- LEFT CONTENT -->
+        <div class="text-side">
+            <p class="eyebrow">What we do</p>
+
+            <h2>Cinematic storytelling for your delivery day.</h2>
+
+            <p>
+            We capture your vehicle delivery with a premium touch — from key handovers to driving shots and celebration moments.  
+            Choose from quick reels or full-scale cinematic productions tailored to your style.
+            </p>
+        </div>
+
+        <!-- RIGHT IMAGE -->
+        <div class="image-side">
+            <img src="/static/images/car1.jpeg" alt="Delivery Moment">
+        </div>
+
+    </div>
+</section>
+
+<!-- GALLERY -->
+<section class="section gallery-section">
+    <div class="container">
+        <div class="section-heading">
+            <p class="eyebrow">Gallery</p>
+            <h2>Moments we’ve captured.</h2>
+        </div>
+
+        <div class="gallery-grid" id="galleryGrid">
+            {% for item in media %}
+                <div class="gallery-item {% if loop.index > 6 %}hidden-media{% endif %}" 
+                    onclick="openMedia('{{ item.file_url }}', '{{ item.media_type }}')">
+
+                    {% if item.media_type == "image" %}
+                        <img src="{{ item.file_url }}" alt="media">
+                    {% else %}
+                        <div class="video-wrapper">
+                            <video muted>
+                                <source src="{{ item.file_url }}" type="video/mp4">
+                            </video>
+                            <div class="play-btn">▶</div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- SEE MORE BUTTON -->
+        <div class="see-more-container">
+            <button class="btn btn-outline" onclick="toggleGallery()" id="seeMoreBtn">
+                See More
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- SINGLE MODAL (VERY IMPORTANT) -->
+<div id="mediaModal" class="modal">
+    <span class="close" onclick="closeMedia()">&times;</span>
+    <div class="modal-content" id="mediaContainer"></div>
+</div>
+
+<!-- REVIEWS -->
+<section class="section reviews-section">
+    <div class="container">
+
+        <!-- HEADING -->
+        <div class="section-heading">
+            <p class="eyebrow">Customer reviews</p>
+            <h2>What our customers say.</h2>
+        </div>
+
+        <!--  ADD REVIEW FORM -->
+        {% if current_user %}
+    
+        <div class="review-box">
+
+        <h3 style="text-align:center;">Add Your Review</h3>
+
+            <form method="POST" action="/add_review" class="review-form">
+
+                <div class="review-inner">
+
+                    <!--  STARS -->
+                    <div class="star-rating">
+                        <span data-value="1">★</span>
+                        <span data-value="2">★</span>
+                        <span data-value="3">★</span>
+                        <span data-value="4">★</span>
+                        <span data-value="5">★</span>
+                    </div>
+
+                    <input type="hidden" name="rating" id="ratingInput">
+
+                    <!-- TEXT -->
+                    <textarea name="text" placeholder="Write your experience..." required></textarea>
+
+                    <!-- BUTTON -->
+                    <button class="btn btn-gold">Submit Review</button>
+
+                </div>
+
+            </form>
+
+        </div>
+        {% else %}
+        <p style="text-align:center;">Login to add a review.</p>
+        {% endif %}
+
+        <!-- REVIEWS LIST -->
+        <div class="reviews-grid">
+            {% for review in reviews %}
+                <article class="review-card">
+
+                    <!-- STARS -->
+                    <div class="stars">
+                        {% for _ in range(review.rating) %}★{% endfor %}
+                        {% for _ in range(5 - review.rating) %}<span style="color:#555;">★</span>{% endfor %}
+                    </div>
+
+                    <!-- TEXT -->
+                    <p>"{{ review.text }}"</p>
+
+                    <!-- NAME -->
+                    <h3>{{ review.name }}</h3>
+
+                    <!-- DELETE OPTION -->
+                    {% if current_user and (current_user.id == review.user_id or session.get("admin_logged_in")) %}
+                        <a href="/delete_review/{{ review.id }}" class="delete-btn">Delete</a>
+                    {% endif %}
+
+                </article>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+
+<!-- QUERY MODAL -->
+<div id="queryModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeQuery()">&times;</span>
+
+        <h2>Get in Touch</h2>
+        <p>Tell us your requirement and we’ll get back to you shortly.</p>
+
+        <form method="POST" action="/send_query" class="form-stack">
+            <input name="name" placeholder="Your Name" required>
+            <input name="email" placeholder="Email" required>
+            <input name="phone" placeholder="Phone Number" required>
+            <input name="location" placeholder="Your Location" required>
+
+            <textarea name="message" placeholder="Describe your requirement..." required></textarea>
+
+            <button class="btn btn-gold">Submit</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

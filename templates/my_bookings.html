@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}My Bookings{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+    <div class="container">
+        <h1>My Bookings</h1>
+        <p>View all your delivery bookings</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+
+        {% if bookings %}
+            {% for booking in bookings %}
+                <div class="booking-card">
+
+                    <h2>{{ booking.package_name }}</h2>
+
+                    <p><strong>Name:</strong> {{ booking.full_name }}</p>
+                    <p><strong>Phone:</strong> {{ booking.phone }}</p>
+                    <p><strong>Email:</strong> {{ booking.email }}</p>
+
+                    <p><strong>Showroom:</strong> {{ booking.showroom_name }}</p>
+                    <p><strong>Address:</strong> {{ booking.showroom_address }}</p>
+
+                    <p><strong>Delivery Location:</strong> {{ booking.delivery_location }}</p>
+
+                    <p><strong>sales_consultant:</strong> {{ booking.sales_consultant_name }} ({{ booking.sales_consultant_phone }})</p>
+
+                    <p><strong>Date:</strong> {{ booking.delivery_date }}</p>
+                    <p><strong>Time:</strong> {{ booking.delivery_time }}</p>
+
+                    <p><strong>Status:</strong>
+                        {% if booking.status == "Pending" %}
+                            <span style="color:orange;">Waiting for confirmation ⏳</span>
+                        {% elif booking.status == "Confirmed" %}
+                            <span style="color:green;">Confirmed ✅</span>
+                        {% elif booking.status == "Completed" %}
+                            <span style="color:blue;">Completed 🚚</span>
+                        {% else %}
+                            <span style="color:red;">Cancelled ❌</span>
+                        {% endif %}
+                    </p>
+
+                </div>
+                <hr>
+            {% endfor %}
+        {% else %}
+            <p>No bookings yet.</p>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

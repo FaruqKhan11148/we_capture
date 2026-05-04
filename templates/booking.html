@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Booking | We Capture{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container">
+        <p class="eyebrow">Booking</p>
+        <h1>Reserve your delivery capture.</h1>
+        <p>Share the delivery details and our team will prepare the shoot plan around your selected package.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container booking-layout">
+        <form class="booking-form" method="post" action="{{ url_for('booking') }}">
+            <div class="form-grid">
+                <div class="form-field">
+                    <label for="full_name">Full Name</label>
+                    <input id="full_name" name="full_name" type="text" value="{{ current_user.username if current_user else '' }}" required>
+                </div>
+                <div class="form-field">
+                    <label for="phone">Phone Number</label>
+                    <input id="phone" name="phone" type="tel" value="{{ current_user.phone if current_user else '' }}" required>
+                </div>
+                <div class="form-field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" value="{{ current_user.email if current_user else '' }}" required>
+                </div>
+                <div class="form-field">
+                    <label for="showroom_name">Showroom Name</label>
+                    <input id="showroom_name" name="showroom_name" type="text" required>
+                </div>
+                <div class="form-field form-field-wide">
+                    <label for="showroom_address">Showroom Address</label>
+                    <input id="showroom_address" name="showroom_address" type="text" required>
+                </div>
+                <div class="form-field form-field-wide">
+                    <label for="delivery_location">Delivery Location</label>
+                    <input id="delivery_location" name="delivery_location" type="text" required>
+                </div>
+                <div class="form-field">
+                    <label for="sales_consultant_name">Sales Consultant Name</label>
+                    <input id="sales_consultant_name" name="sales_consultant_name" type="text" required>
+                </div>
+                <div class="form-field">
+                    <label for="sales_consultant_phone">Sales Consultant Phone</label>
+                    <input id="sales_consultant_phone" name="sales_consultant_phone" type="tel" required>
+                </div>
+                <div class="form-field">
+                    <label for="delivery_date">Delivery Date</label>
+                    <input id="delivery_date" name="delivery_date" type="date" required>
+                </div>
+                <div class="form-field">
+                    <label for="delivery_time">Delivery Time</label>
+                    <input id="delivery_time" name="delivery_time" type="time" required>
+                </div>
+                <div class="form-field form-field-wide">
+                    <label for="package_name">Package selection</label>
+                    <select id="package_name" name="package_name" required>
+                        <option value="">Select a package</option>
+                        {% for name, package in packages.items() %}
+                            <option value="{{ name }}" {% if selected_package == name %}selected{% endif %}>{{ name }} - {{ package.price }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-gold btn-full" type="submit">Submit Booking</button>
+        </form>
+        <aside class="booking-aside">
+            <h2>What happens next</h2>
+            <p>Your request is saved immediately. The admin team receives the booking details by email when mail credentials are configured.</p>
+            <div class="aside-stat">
+                <strong>24 hr</strong>
+                <span>planning callback window</span>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

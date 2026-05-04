@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Confirmed | We Capture{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-panel success-panel">
+        <p class="eyebrow">Booking confirmed</p>
+        <h1>{{ booking.package_name }}</h1>
+        <p>Your We Capture booking for {{ booking.delivery_date.strftime("%d %b %Y") }} at {{ booking.delivery_time.strftime("%I:%M %p") }} has been recorded.</p>
+
+        <p class="booking-status">
+            Status:
+            <span class="status pending">Waiting for confirmation ⏳</span>
+        </p>
+
+        <div class="timeline">
+
+            <div class="step {% if booking.status in ['Pending','Confirmed','Completed'] %}active{% endif %}">
+                <div class="circle">1</div>
+                <p>Booked</p>
+            </div>
+
+            <div class="line"></div>
+
+            <div class="step {% if booking.status in ['Confirmed','Completed'] %}active{% endif %}">
+                <div class="circle">2</div>
+                <p>Confirmed</p>
+            </div>
+
+            <div class="line"></div>
+
+            <div class="step {% if booking.status == 'Completed' %}active{% endif %}">
+                <div class="circle">3</div>
+                <p>Completed</p>
+            </div>
+
+        </div>
+        
+        <dl class="booking-summary">
+            <div>
+                <dt>Showroom</dt>
+                <dd>{{ booking.showroom_name }}</dd>
+            </div>
+            <div>
+                <dt>Location</dt>
+                <dd>{{ booking.delivery_location }}</dd>
+            </div>
+            <div>
+                <dt>Sales Consultant</dt>
+                <dd>{{ booking.sales_consultant_name }} · {{ booking.sales_consultant_phone }}</dd>
+            </div>
+        </dl>
+        <a class="btn btn-gold btn-full" href="{{ url_for('home') }}">Back to Home</a>
+    </div>
+
+    
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Media</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Upload Media 📸🎥</h1>
+    <a href="/admin" class="logout-btn">Back</a>
+</div>
+
+<div class="container">
+
+    <form method="POST" enctype="multipart/form-data">
+        
+        <label>Select File</label><br>
+        <input type="file" name="file" required><br><br>
+
+        <label>Media Type</label><br>
+        <select name="media_type">
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+        </select><br><br>
+
+        <button type="submit">Upload</button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

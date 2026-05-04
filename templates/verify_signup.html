@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Verify your account</h2>
+<p>Enter the OTP sent to your email</p>
+
+<form method="POST" class="otp-form">
+
+    <h2>Verify OTP</h2>
+    <p>Enter the 6-digit code</p>
+
+    <div class="otp-container">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+    </div>
+
+    <!-- Hidden input -->
+    <input type="hidden" name="otp" id="otp">
+
+    <button class="btn btn-gold">Verify</button>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-shell">
+<div class="auth-panel">
+
+<h2>Signup</h2>
+
+<form method="POST" class="form-stack">
+
+<input name="username" placeholder="Full Name" required>
+<input name="email" placeholder="Email" required>
+<input name="phone" placeholder="Phone" required>
+
+<!-- PASSWORD WITH TOGGLE -->
+<div class="password-wrapper">
+    <input type="password" name="password" id="signupPassword" placeholder="Password" required>
+    <span class="toggle-password" onclick="togglePassword('signupPassword')">👁️</span>
+</div>
+
+<button class="btn btn-gold">Send OTP</button>
+
+</form>
+
+</div>
+</div>
+
+{% endblock %}
