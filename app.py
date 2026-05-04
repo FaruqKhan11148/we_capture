@@ -39,7 +39,7 @@ app.config["MAIL_USE_TLS"] = True
 
 app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
-app.config["MAIL_DEFAULT_SENDER"] = "We Capture <official.wecapture@gmail.com>"
+app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_USERNAME")
 
 # ADMIN LOGIN
 ADMIN_EMAIL = os.environ.get("MAIL_USERNAME")
@@ -202,7 +202,7 @@ def signup():
 
         try:
             import threading
-            threading.Thread(target=lambda: mail.send(msg)).start()
+            mail.send(msg)            
             print("✅ Email sent successfully")
         except Exception as e:
             print("⚠️ Email failed, OTP:", otp)
@@ -317,7 +317,7 @@ def forgot_password():
         """
 
         try:
-           threading.Thread(target=lambda: mail.send(msg)).start()
+           mail.send(msg)
         except Exception as e:
             print("OTP:", otp)
             print("Error:", e)
@@ -480,7 +480,7 @@ def booking():
         """
 
         try:
-            threading.Thread(target=lambda: mail.send(msg)).start()
+            mail.send(msg)
             print("📩 Admin email sent")
         except Exception as e:
             print("⚠️ Admin email failed:", e)
@@ -640,7 +640,7 @@ def update_status(id, status):
         """
 
     try:
-        threading.Thread(target=lambda: mail.send(msg)).start()
+        mail.send(msg)
         print("📩 Status email sent")
     except Exception as e:
         print("⚠️ Email failed:", e)
@@ -708,7 +708,7 @@ def send_query():
     """
 
     try:
-        threading.Thread(target=lambda: mail.send(msg)).start()
+        mail.send(msg)
         flash("Query sent successfully!", "success")
     except Exception as e:
         print(e)
