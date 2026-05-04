@@ -1,7 +1,8 @@
 import os
 import threading
 from dotenv import load_dotenv
-
+import resend
+resend.api_key = os.environ.get("RESEND_API_KEY")
 load_dotenv()
 
 import random
@@ -10,7 +11,7 @@ from functools import wraps
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail, Message
+# from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import os
@@ -47,7 +48,7 @@ ADMIN_EMAIL = os.environ.get("MAIL_USERNAME")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
 db = SQLAlchemy(app)
-mail = Mail(app)
+# mail = Mail(app)
 
 
 # ---------------- MODELS ----------------
@@ -202,16 +203,28 @@ def signup():
         """
 
         try:
-            mail.send(msg)
-            print("✅ Email sent successfully")
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": email,
+                "subject": "We Capture OTP Verification",
+                "html": f"""
+                <h2>We Capture 🎥</h2>
+                <p>Hello,</p>
+                <p>Your OTP is:</p>
+                <h1 style="color:#d7ad4b;">{otp}</h1>
+                <p>This OTP is valid for 5 minutes.</p>
+                """
+            })
+
+            print("✅ Email sent via Resend")
 
             flash("OTP sent to your email. Please verify.")
             return redirect(f"/verify_signup/{email}")
 
         except Exception as e:
-            print("❌ EMAIL ERROR:", e)
+            print("❌ RESEND ERROR:", e)
 
-            flash("Failed to send OTP. Please try again.", "danger")
+            flash("Failed to send OTP", "danger")
             return redirect("/signup")
 
     return render_template("signup.html")
@@ -320,12 +333,19 @@ def forgot_password():
         """
 
         try:
-           mail.send(msg)
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": email,
+                "subject": "We Capture - Reset Password OTP",
+                "html": f"""
+                <h2>We Capture 🎥</h2>
+                <p>Your OTP is:</p>
+                <h1 style="color:#d7ad4b;">{otp}</h1>
+                <p>Valid for 5 minutes</p>
+                """
+            })
         except Exception as e:
-            print("OTP:", otp)
-            print("Error:", e)
-
-        return redirect(f"/reset_password/{email}")
+            print("❌ RESEND ERROR:", e)
 
     return render_template("forgot_password.html")
 
@@ -483,12 +503,20 @@ def booking():
         """
 
         try:
-            mail.send(msg)
-            print("📩 Admin email sent")
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": ADMIN_EMAIL,
+                "subject": "New Booking Received - We Capture",
+                "html": f"""
+                <h2>New Booking 🚗</h2>
+                <p>Name: {booking.full_name}</p>
+                <p>Phone: {booking.phone}</p>
+                <p>Email: {booking.email}</p>
+                <p>Package: {booking.package_name}</p>
+                """
+            })
         except Exception as e:
-            print("⚠️ Admin email failed:", e)
-
-        return redirect(f"/booking_success/{booking.id}")
+            print("❌ RESEND ERROR:", e)
 
     return render_template("booking.html", packages=PACKAGES)
 
