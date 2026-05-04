@@ -23,7 +23,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # DATABASE
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///we_capture.db"
+import os
+
+uri = os.getenv("DATABASE_URL")
+
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = uri or "sqlite:///we_capture.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # MAIL CONFIG
