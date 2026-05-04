@@ -1,4 +1,5 @@
 import os
+import threading
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -200,7 +201,8 @@ def signup():
         """
 
         try:
-            mail.send(msg)
+            import threading
+            threading.Thread(target=lambda: mail.send(msg)).start()
             print("✅ Email sent successfully")
         except Exception as e:
             print("⚠️ Email failed, OTP:", otp)
@@ -315,7 +317,7 @@ def forgot_password():
         """
 
         try:
-            mail.send(msg)
+           threading.Thread(target=lambda: mail.send(msg)).start()
         except Exception as e:
             print("OTP:", otp)
             print("Error:", e)
@@ -478,7 +480,7 @@ def booking():
         """
 
         try:
-            mail.send(msg)
+            threading.Thread(target=lambda: mail.send(msg)).start()
             print("📩 Admin email sent")
         except Exception as e:
             print("⚠️ Admin email failed:", e)
@@ -638,7 +640,7 @@ def update_status(id, status):
         """
 
     try:
-        mail.send(msg)
+        threading.Thread(target=lambda: mail.send(msg)).start()
         print("📩 Status email sent")
     except Exception as e:
         print("⚠️ Email failed:", e)
@@ -706,7 +708,7 @@ def send_query():
     """
 
     try:
-        mail.send(msg)
+        threading.Thread(target=lambda: mail.send(msg)).start()
         flash("Query sent successfully!", "success")
     except Exception as e:
         print(e)
