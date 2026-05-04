@@ -23,8 +23,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 # DATABASE
-import os
-
 uri = os.getenv("DATABASE_URL")
 
 if uri and uri.startswith("postgres://"):
@@ -47,8 +45,8 @@ ADMIN_EMAIL = app.config["MAIL_USERNAME"]
 ADMIN_PASSWORD = "wecapture@2627"
 
 db = SQLAlchemy(app)
+#mail = Mail(app)
 mail = Mail(app)
-
 
 # ---------------- MODELS ----------------
 
@@ -203,6 +201,7 @@ def signup():
 
         try:
             #mail.send(msg)
+            
             print("✅ Email sent successfully")
         except Exception as e:
             print("⚠️ Email failed, OTP:", otp)
@@ -230,7 +229,9 @@ def verify_signup(email):
             flash("Invalid OTP", "danger")
             return redirect(request.url)
 
-        if datetime.now(UTC) > datetime.fromisoformat(temp_user["otp_expiry"]):
+        expiry = datetime.fromisoformat(temp_user["otp_expiry"])
+
+        if datetime.now(UTC) > expiry:
             flash("OTP expired", "danger")
             return redirect("/signup")
 
@@ -296,7 +297,7 @@ def forgot_password():
 
         otp = generate_otp()
         user.otp = otp
-        user.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
+        user.otp_expiry = datetime.now(UTC) + timedelta(minutes=5)
         db.session.commit()
 
         msg = Message(
@@ -317,7 +318,7 @@ def forgot_password():
         """
 
         try:
-            #mail.send(msg)
+            mail.send(msg)   # ✅ enable email sending
         except Exception as e:
             print("OTP:", otp)
             print("Error:", e)
@@ -344,7 +345,7 @@ def reset_password(email):
             flash("Invalid OTP", "danger")
             return redirect(request.url)
 
-        if user.otp_expiry < datetime.utcnow():
+        if user.otp_expiry < datetime.now(UTC):
             flash("OTP expired", "danger")
             return redirect("/forgot_password")
 
@@ -806,8 +807,3 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run()
-
-
-@app.before_request
-def create_tables():
-    db.create_all()
