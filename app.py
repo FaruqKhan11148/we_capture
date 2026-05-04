@@ -162,64 +162,90 @@ def signup():
             flash("Email already exists", "danger")
             return redirect("/signup")
 
-        user = User(
-            username=username,
-            email=email,
-            phone=phone,
-            is_verified=True   # ✅ directly verified
+        otp = generate_otp()
+
+        session["temp_user"] = {
+            "username": username,
+            "email": email,
+            "phone": phone,
+            "password": password,
+            "otp": otp,
+            "otp_expiry": (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
+        }
+
+        # EMAIL
+        msg = Message(
+            subject="We Capture OTP Verification",
+            recipients=[email]
         )
-        user.set_password(password)
 
-        db.session.add(user)
-        db.session.commit()
+        msg.html = f"""
+        <h2>We Capture 🎥</h2>
+        <p>Hello,</p>
 
-        session["user_id"] = user.id
+        <p>Thank you for signing up.</p>
 
-        flash("Account created successfully 🎉")
-        return redirect("/booking")
+        <p><strong>Your OTP is:</strong></p>
+
+        <h1 style="color:#d7ad4b;">{otp}</h1>
+
+        <p>This OTP is valid for 5 minutes.</p>
+
+        <p>If you didn’t request this, ignore this email.</p>
+        """
+
+        try:
+            mail.send(msg)
+            print("✅ Email sent successfully")
+        except Exception as e:
+            print("⚠️ Email failed, OTP:", otp)
+            print("Error:", e)
+
+        flash("OTP sent to your email. Please verify.")
+        return redirect(f"/verify_signup/{email}")
 
     return render_template("signup.html")
 
 # ---------------- VERIFY ----------------
 
-# @app.route("/verify_signup/<email>", methods=["GET", "POST"])
-# def verify_signup(email):
-#     temp_user = session.get("temp_user")
+@app.route("/verify_signup/<email>", methods=["GET", "POST"])
+def verify_signup(email):
+    temp_user = session.get("temp_user")
 
-#     if not temp_user or temp_user["email"] != email:
-#         flash("Session expired. Please signup again.", "danger")
-#         return redirect("/signup")
+    if not temp_user or temp_user["email"] != email:
+        flash("Session expired. Please signup again.", "danger")
+        return redirect("/signup")
 
-#     if request.method == "POST":
-#         otp = request.form["otp"]
+    if request.method == "POST":
+        otp = request.form["otp"]
 
-#         if otp != temp_user["otp"]:
-#             flash("Invalid OTP", "danger")
-#             return redirect(request.url)
+        if otp != temp_user["otp"]:
+            flash("Invalid OTP", "danger")
+            return redirect(request.url)
 
-#         if datetime.now(UTC) > datetime.fromisoformat(temp_user["otp_expiry"]):
-#             flash("OTP expired", "danger")
-#             return redirect("/signup")
+        if datetime.now(UTC) > datetime.fromisoformat(temp_user["otp_expiry"]):
+            flash("OTP expired", "danger")
+            return redirect("/signup")
 
-#         # ✅ CREATE USER NOW (after verification)
-#         user = User(
-#             username=temp_user["username"],
-#             email=temp_user["email"],
-#             phone=temp_user["phone"],
-#             is_verified=True
-#         )
-#         user.set_password(temp_user["password"])
+        # ✅ CREATE USER NOW (after verification)
+        user = User(
+            username=temp_user["username"],
+            email=temp_user["email"],
+            phone=temp_user["phone"],
+            is_verified=True
+        )
+        user.set_password(temp_user["password"])
 
-#         db.session.add(user)
-#         db.session.commit()
+        db.session.add(user)
+        db.session.commit()
 
-#         session.pop("temp_user", None)
-#         session["user_id"] = user.id
+        session.pop("temp_user", None)
+        session["user_id"] = user.id
 
-#         flash("Account created successfully 🎉")
-#         return redirect("/booking")
+        flash("Account created successfully 🎉")
+        return redirect("/booking")
 
-#     return render_template("verify_signup.html", email=email)
+    return render_template("verify_signup.html", email=email)
 
 # ---------------- LOGIN ----------------
 
