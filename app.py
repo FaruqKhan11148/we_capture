@@ -35,18 +35,17 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
-
+app.config["MAIL_USE_SSL"] = False   # ✅ ADD THIS
 app.config["MAIL_USERNAME"] = "official.wecapture@gmail.com"
 app.config["MAIL_PASSWORD"] = "zeydphphmxzrubrg"
-app.config["MAIL_DEFAULT_SENDER"] = "We Capture <official.wecapture@gmail.com>"
-
-# ADMIN LOGIN
-ADMIN_EMAIL = app.config["MAIL_USERNAME"]
+app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 ADMIN_PASSWORD = "wecapture@2627"
 
 db = SQLAlchemy(app)
-#mail = Mail(app)
 mail = Mail(app)
+app.config["MAIL_USE_SSL"] = False
+app.config["MAIL_USE_TLS"] = True
+app.config["MAIL_DEBUG"] = True
 
 # ---------------- MODELS ----------------
 
@@ -200,12 +199,11 @@ def signup():
         """
 
         try:
-            #mail.send(msg)
-            
-            print("✅ Email sent successfully")
+            mail.send(msg)   # ✅ REAL EMAIL SEND
+            flash("OTP sent to your email successfully", "success")
         except Exception as e:
-            print("⚠️ Email failed, OTP:", otp)
-            print("Error:", e)
+            print(e)
+            flash("Failed to send query", "danger")
 
         flash("OTP sent to your email. Please verify.")
         return redirect(f"/verify_signup/{email}")
@@ -709,11 +707,11 @@ def send_query():
     """
 
     try:
-        #mail.send(msg)
-        flash("Query sent successfully!", "success")
+        mail.send(msg)
+        flash("OTP sent to your email successfully", "success")
     except Exception as e:
-        print(e)
-        flash("Failed to send query", "danger")
+        print("EMAIL ERROR:", e)
+        flash("Failed to send OTP email", "danger")
 
     return redirect("/")
 
