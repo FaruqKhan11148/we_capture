@@ -1045,3 +1045,23 @@ select:focus {
     height: 32px;
     filter: brightness(0) saturate(100%) invert(74%) sepia(38%) saturate(500%) hue-rotate(5deg);
 }
+
+.insta-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #111;
+    padding: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    z-index: 999;
+}
+
+.insta-float img {
+    width: 28px;
+    height: 28px;
+}
+
+.insta-float:hover {
+    transform: scale(1.1);
+}
