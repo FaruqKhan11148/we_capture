@@ -181,11 +181,32 @@ import threading
 def send_async_mail(app, msg):
     with app.app_context():
         try:
+            threading.Thread(
+            target=send_mail_safe,
+            args=(app, msg),
+            daemon=True
+        ).start()
+        except Exception as e:
+            print("MAIL ERROR:", e)
+
+
+import threading
+
+def send_mail_safe(app, msg):
+    with app.app_context():
+        try:
             mail.send(msg)
         except Exception as e:
             print("MAIL ERROR:", e)
 
 
+def send_mail_async(app, msg):
+    threading.Thread(
+        target=send_mail_safe,
+        args=(app, msg),
+        daemon=True
+    ).start()
+    
 @app.route("/send_query", methods=["POST"])
 def send_query():
 
@@ -209,10 +230,11 @@ def send_query():
     <p><b>Message:</b> {message}</p>
     """
 
-    # 🚀 NON-BLOCKING EMAIL (IMPORTANT FIX)
+    # 🚀 fire-and-forget (NON BLOCKING)
     threading.Thread(
-        target=send_async_mail,
-        args=(app, msg)
+        target=send_mail_safe,
+        args=(app, msg),
+        daemon=True
     ).start()
 
     flash("Query sent successfully!", "success")
@@ -293,41 +315,6 @@ def login():
 
     return render_template("login.html")
 
-
-# ================= Query =================
-
-@app.route("/send_query", methods=["POST"])
-def send_query():
-    name = request.form.get("name")
-    email = request.form.get("email")
-    phone = request.form.get("phone")
-    location = request.form.get("location")
-    message = request.form.get("message")
-
-    try:
-        msg = Message(
-            subject="New Query - We Capture",
-            recipients=[ADMIN_EMAIL]
-        )
-
-        msg.html = f"""
-        <h2>New Query Received</h2>
-        <p><b>Name:</b> {name}</p>
-        <p><b>Email:</b> {email}</p>
-        <p><b>Phone:</b> {phone}</p>
-        <p><b>Location:</b> {location}</p>
-        <p><b>Message:</b> {message}</p>
-        """
-
-        mail.send(msg)
-        flash("Query sent successfully!", "success")
-
-    except Exception as e:
-        print("QUERY EMAIL ERROR:", e)
-        flash("Failed to send query", "danger")
-
-    return redirect("/")
-
 # ================= LOGOUT =================
 
 @app.route("/logout")
@@ -374,7 +361,11 @@ def forgot_password():
         """
 
         try:
-            mail.send(msg)
+            threading.Thread(
+                target=send_mail_safe,
+                args=(app, msg),
+                daemon=True
+            ).start()
             flash("Reset OTP sent to email", "success")
 
         except Exception as e:
@@ -499,7 +490,11 @@ def booking():
             <p><b>Package:</b> {booking.package_name}</p>
             """
 
-            mail.send(msg)
+            threading.Thread(
+                target=send_mail_safe,
+                args=(app, msg),
+                daemon=True
+            ).start()
 
             flash("Booking successful!", "success")
             return redirect(f"/booking_success/{booking.id}")
@@ -609,7 +604,11 @@ def update_status(id, status):
         """
 
     try:
-        mail.send(msg)
+        threading.Thread(
+            target=send_mail_safe,
+            args=(app, msg),
+            daemon=True
+        ).start()
         flash("Status updated + email sent", "success")
     except Exception as e:
         print("STATUS EMAIL ERROR:", str(e))
