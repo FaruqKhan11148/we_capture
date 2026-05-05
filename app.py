@@ -36,12 +36,13 @@ app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
+
 app.config["MAIL_USERNAME"] = "official.wecapture@gmail.com"
-app.config["MAIL_PASSWORD"] = "zeydphphmxzrubrg"
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")  # IMPORTANT
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 
-# IMPORTANT DEBUG
 app.config["MAIL_DEBUG"] = True
+app.config["MAIL_SUPPRESS_SEND"] = False
 
 # NOW INIT MAIL
 mail = Mail(app)
@@ -443,9 +444,11 @@ def booking():
         # 🔥 ADMIN EMAIL
         ADMIN_EMAIL = "official.wecapture@gmail.com"
 
+        ADMIN_EMAIL = "official.wecapture@gmail.com"
+
         msg = Message(
             subject="🚗 New Booking Received - We Capture",
-            ADMIN_EMAIL = "official.wecapture@gmail.com"
+            recipients=[ADMIN_EMAIL]
         )
 
         msg.html = f"""
@@ -480,7 +483,7 @@ def booking():
         """
 
         try:
-            #mail.send(msg)
+            mail.send(msg)
             print("📩 Admin email sent")
         except Exception as e:
             print("⚠️ Admin email failed:", e)
@@ -577,6 +580,9 @@ def admin_login():
         email = request.form["email"]
         password = request.form["password"]
 
+        ADMIN_EMAIL = "official.wecapture@gmail.com"
+        ADMIN_PASSWORD = "wecapture@2627"
+
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
             session["admin_logged_in"] = True
             flash("Admin logged in successfully")
@@ -640,7 +646,7 @@ def update_status(id, status):
         """
 
     try:
-        #mail.send(msg)
+        mail.send(msg)
         print("📩 Status email sent")
     except Exception as e:
         print("⚠️ Email failed:", e)
@@ -658,9 +664,11 @@ def send_query():
     location = request.form["location"]
     message = request.form["message"]
 
+    ADMIN_EMAIL = "official.wecapture@gmail.com"
+
     msg = Message(
         subject="New Query - We Capture",
-        ADMIN_EMAIL = "official.wecapture@gmail.com"
+        recipients=[ADMIN_EMAIL]
     )
 
     msg.html = f"""
