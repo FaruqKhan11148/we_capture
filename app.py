@@ -91,8 +91,8 @@ app.config["MAIL_TIMEOUT"] = 10
 ADMIN_EMAIL = "official.wecapture@gmail.com"
 
 
-print("MAIL USER:", app.config["MAIL_USERNAME"])
-print("MAIL PASS LOADED:", bool(app.config["MAIL_PASSWORD"]))
+#print("MAIL USER:", app.config["MAIL_USERNAME"])
+#print("MAIL PASS LOADED:", bool(app.config["MAIL_PASSWORD"]))
 
 # ================= MODELS =================
 
@@ -265,6 +265,7 @@ def signup():
 
         msg = Message(
             subject="OTP Verification - We Capture",
+            sender=("We Capture", "official.wecapture@gmail.com"),
             recipients=[email]
         )
 
@@ -446,35 +447,44 @@ def reset_password(email):
 
     return render_template("reset_password.html")
 
+# ================= COMMON PACKAGES DATA =================
+
+PACKAGES = {
+    "Signature Moment": {
+        "price": "₹4,799",
+        "summary": "Simple stylish delivery celebration.",
+        "features": [
+            "Celebration Cake",
+            "Flower Setup",
+            "Cinematic Reel"
+        ]
+    },
+    "Elite Experience": {
+        "price": "₹13,999",
+        "summary": "Grand entry experience.",
+        "features": [
+            "Red Carpet Entry",
+            "Fire Effects",
+            "Cinematic Reel"
+        ]
+    }
+}
+
+
+# ================= PACKAGES PAGE =================
+
+@app.route("/packages")
+def packages():
+    return render_template("packages.html", packages=PACKAGES)
+
+
 # ================= BOOKING =================
 
 @app.route("/booking", methods=["GET", "POST"])
 @login_required
 def booking():
 
-    PACKAGES = {
-        "Signature Moment": {
-            "price": "₹4,799",
-            "summary": "Simple stylish delivery celebration.",
-            "features": [
-                "Celebration Cake",
-                "Flower Setup",
-                "Cinematic Reel"
-            ]
-        },
-        "Elite Experience": {
-            "price": "₹13,999",
-            "summary": "Grand entry experience.",
-            "features": [
-                "Red Carpet Entry",
-                "Fire Effects",
-                "Cinematic Reel"
-            ]
-        }
-    }
-
     if request.method == "POST":
-
         try:
             booking = Booking(
                 user_id=session["user_id"],
@@ -542,7 +552,6 @@ def booking():
 def booking_success(id):
     booking = Booking.query.get_or_404(id)
     return render_template("booking_success.html", booking=booking)
-
 
 # ================= MY BOOKINGS =================
 
@@ -751,3 +760,6 @@ def delete_review(id):
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    app.run(debug=True) 
