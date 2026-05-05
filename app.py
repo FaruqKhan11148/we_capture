@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timedelta, UTC
 from functools import wraps
+import traceback
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -48,6 +49,12 @@ app.config["MAIL_SUPPRESS_SEND"] = False
 mail = Mail(app)
 
 db = SQLAlchemy(app)
+
+
+
+print("MAIL SERVER:", app.config["MAIL_SERVER"])
+print("MAIL USER:", app.config["MAIL_USERNAME"])
+print("MAIL PASS LOADED:", bool(app.config["MAIL_PASSWORD"]))
 
 # ---------------- MODELS ----------------
 
@@ -200,12 +207,24 @@ def signup():
         <p>If you didn’t request this, ignore this email.</p>
         """
 
+        #try:
+            #mail.send(msg)   # ✅ REAL EMAIL SEND
+            #flash("OTP sent to your email successfully", "success")
+        #except Exception as e:
+            #print(e)
+            #flash("Failed to send query", "danger")
+
         try:
-            mail.send(msg)   # ✅ REAL EMAIL SEND
-            flash("OTP sent to your email successfully", "success")
+            mail.send(msg)
+            flash("Email sent successfully ✅", "success")
+
         except Exception as e:
-            print(e)
-            flash("Failed to send query", "danger")
+            error_details = traceback.format_exc()
+
+            print("🔥 EMAIL ERROR OCCURRED:")
+            print(error_details)
+
+            flash(f"Email failed ❌: {str(e)}", "danger")
 
         flash("OTP sent to your email. Please verify.")
         return redirect(f"/verify_signup/{email}")
@@ -668,7 +687,8 @@ def send_query():
 
     msg = Message(
         subject="New Query - We Capture",
-        recipients=[ADMIN_EMAIL]
+        recipients=[ADMIN_EMAIL],
+        sender=app.config["MAIL_USERNAME"]
     )
 
     msg.html = f"""
