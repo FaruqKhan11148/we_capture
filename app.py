@@ -48,8 +48,11 @@ app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 app.config["MAIL_DEBUG"] = True
 
 
-mail = Mail(app)
+mail = Mail()
+mail.init_app(app)
 db = SQLAlchemy(app)
+
+app.config["MAIL_TIMEOUT"] = 10
 
 
 # ================= GLOBAL CONSTANTS =================
