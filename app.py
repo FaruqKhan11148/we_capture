@@ -176,60 +176,47 @@ def inject_user():
 
 # ================= SIGNUP =================
 
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    if request.method == "POST":
+import threading
 
-        username = request.form["username"]
-        email = request.form["email"].strip().lower()
-        phone = request.form["phone"]
-        password = request.form["password"]
-
-        # check if user exists
-        if User.query.filter_by(email=email).first():
-            flash("Email already exists", "danger")
-            return redirect("/signup")
-
-        # generate OTP
-        otp = generate_otp()
-
-        session["temp_user"] = {
-            "username": username,
-            "email": email,
-            "phone": phone,
-            "password": password,
-            "otp": otp,
-            "otp_expiry": (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
-        }
-
-        # EMAIL
-        msg = Message(
-            subject="We Capture OTP Verification",
-            recipients=[email]
-        )
-
-        msg.html = f"""
-        <h2>We Capture 🎥</h2>
-        <p>Hello {username},</p>
-
-        <p>Your OTP is:</p>
-        <h1 style="color:#d7ad4b;">{otp}</h1>
-
-        <p>This OTP is valid for 5 minutes.</p>
-        """
-
+def send_async_mail(app, msg):
+    with app.app_context():
         try:
             mail.send(msg)
-            flash("OTP sent to your email successfully", "success")
-            return redirect(f"/verify_signup/{email}")
-
         except Exception as e:
-            print("EMAIL ERROR:", str(e))
-            flash("Email failed. Check server logs.", "danger")
-            return redirect("/signup")
+            print("MAIL ERROR:", e)
 
-    return render_template("signup.html")
 
+@app.route("/send_query", methods=["POST"])
+def send_query():
+
+    name = request.form.get("name")
+    email = request.form.get("email")
+    phone = request.form.get("phone")
+    location = request.form.get("location")
+    message = request.form.get("message")
+
+    msg = Message(
+        subject="New Query - We Capture",
+        recipients=[ADMIN_EMAIL]
+    )
+
+    msg.html = f"""
+    <h2>New Query Received</h2>
+    <p><b>Name:</b> {name}</p>
+    <p><b>Email:</b> {email}</p>
+    <p><b>Phone:</b> {phone}</p>
+    <p><b>Location:</b> {location}</p>
+    <p><b>Message:</b> {message}</p>
+    """
+
+    # 🚀 NON-BLOCKING EMAIL (IMPORTANT FIX)
+    threading.Thread(
+        target=send_async_mail,
+        args=(app, msg)
+    ).start()
+
+    flash("Query sent successfully!", "success")
+    return redirect("/")
 
 # ================= VERIFY SIGNUP =================
 
@@ -340,7 +327,7 @@ def send_query():
         flash("Failed to send query", "danger")
 
     return redirect("/")
-    
+
 # ================= LOGOUT =================
 
 @app.route("/logout")
