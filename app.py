@@ -1,30 +1,30 @@
+import os
 import random
+import traceback
 from datetime import datetime, timedelta, UTC
 from functools import wraps
-import smtplib
-import traceback
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
-
-import os
 from werkzeug.utils import secure_filename
 
-# CREATE APP ONLY ONCE
+import smtplib
+
+
+# ================= APP INIT =================
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret123"
 
-# UPLOAD CONFIG
+
+# ================= UPLOAD CONFIG =================
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-# AUTO CREATE FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
-# DATABASE
+# ================= DATABASE =================
 uri = os.getenv("DATABASE_URL")
 
 if uri and uri.startswith("postgres://"):
@@ -33,114 +33,61 @@ if uri and uri.startswith("postgres://"):
 app.config["SQLALCHEMY_DATABASE_URI"] = uri or "sqlite:///we_capture.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# MAIL CONFIG
+
+# ================= MAIL CONFIG =================
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
-app.config["MAIL_TIMEOUT"] = 10
 
 app.config["MAIL_USERNAME"] = "official.wecapture@gmail.com"
-app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")  # IMPORTANT
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 
+app.config["MAIL_TIMEOUT"] = 10
 app.config["MAIL_DEBUG"] = True
-app.config["MAIL_SUPPRESS_SEND"] = False
 
-# NOW INIT MAIL
-mail = Mail(app)
+
+# ================= INIT EXTENSIONS =================
 db = SQLAlchemy(app)
+mail = Mail(app)
 
 
-# ---------------- EMAIL TEMPLATES ----------------
-
-def send_signup_otp(email, username, otp):
-    msg = Message(
-        subject="We Capture - Signup OTP",
-        recipients=[email]
-    )
-
-    msg.html = f"""
-    <h2>Welcome {username} 🎥</h2>
-    <p>Your OTP for signup is:</p>
-    <h1>{otp}</h1>
-    <p>Valid for 5 minutes.</p>
-    """
-
-    return send_email(msg)
+# ================= GLOBAL CONSTANTS =================
+ADMIN_EMAIL = "official.wecapture@gmail.com"
 
 
-def send_reset_otp(email, otp):
-    msg = Message(
-        subject="We Capture - Reset OTP",
-        recipients=[email]
-    )
+# ================= EMAIL SENDER (FIXED) =================
+def send_email(msg):
+    """Low-level SMTP sender fallback (FIXED VERSION)"""
+    try:
+        smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+        smtp.starttls()
 
-    msg.html = f"""
-    <h2>Password Reset OTP</h2>
-    <h1>{otp}</h1>
-    <p>Valid for 5 minutes</p>
-    """
+        smtp.login(
+            app.config["MAIL_USERNAME"],
+            app.config["MAIL_PASSWORD"]
+        )
 
-    return send_email(msg)
+        smtp.sendmail(
+            app.config["MAIL_USERNAME"],
+            msg.recipients,
+            msg.as_string()
+        )
 
+        smtp.quit()
+        return True, None
 
-def send_booking_admin_email(booking):
-    ADMIN_EMAIL = "official.wecapture@gmail.com"
-
-    msg = Message(
-        subject="🚗 New Booking",
-        recipients=[ADMIN_EMAIL]
-    )
-
-    msg.html = f"""
-    <h2>New Booking</h2>
-    <p>{booking.full_name}</p>
-    <p>{booking.email}</p>
-    <p>{booking.package_name}</p>
-    """
-
-    return send_email(msg)
+    except Exception:
+        return False, traceback.format_exc()
 
 
-def send_status_email(booking, status):
-    msg = Message(
-        subject=f"Booking {status}",
-        recipients=[booking.email]
-    )
-
-    msg.html = f"""
-    <h2>{status}</h2>
-    <p>{booking.full_name}</p>
-    """
-
-    return send_email(msg)
-
-
-def send_query_email(name, email, phone, location, message):
-    ADMIN_EMAIL = "official.wecapture@gmail.com"
-
-    msg = Message(
-        subject="New Query",
-        recipients=[ADMIN_EMAIL]
-    )
-
-    msg.html = f"""
-    <p>{name}</p>
-    <p>{email}</p>
-    <p>{phone}</p>
-    <p>{location}</p>
-    <p>{message}</p>
-    """
-
-    return send_email(msg)
-
-
+# ================= DEBUG INFO =================
 print("MAIL SERVER:", app.config["MAIL_SERVER"])
 print("MAIL USER:", app.config["MAIL_USERNAME"])
 print("MAIL PASS LOADED:", bool(app.config["MAIL_PASSWORD"]))
 
-# ---------------- MODELS ----------------
+# ================= MODELS =================
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -187,7 +134,8 @@ class Booking(db.Model):
 class Media(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     file_url = db.Column(db.String(300))
-    media_type = db.Column(db.String(10))  # image or video
+    media_type = db.Column(db.String(10))  # image/video
+
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -200,7 +148,7 @@ class Review(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
 
-# ---------------- HELPERS ----------------
+# ================= HELPERS =================
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -210,7 +158,7 @@ def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if "user_id" not in session:
-            flash("Login first", "warning")
+            flash("Login required", "warning")
             return redirect("/login")
         return f(*args, **kwargs)
     return wrapper
@@ -246,30 +194,7 @@ def home():
     return render_template("home.html", media=media, reviews=reviews)
 
 
-# ---------------- SIGNUP ----------------
-
-    def send_email(msg):
-        try:
-            smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
-            smtp.starttls()
-
-            smtp.login(
-                app.config["MAIL_USERNAME"],
-                app.config["MAIL_PASSWORD"]
-            )
-
-            smtp.sendmail(
-                app.config["MAIL_USERNAME"],
-                msg.recipients,
-                msg.as_string()
-            )
-
-            smtp.quit()
-            return True, None
-
-        except Exception:
-            return False, traceback.format_exc()
-
+# ================= SIGNUP =================
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -280,7 +205,7 @@ def signup():
         phone = request.form["phone"]
         password = request.form["password"]
 
-        # check user exists
+        # check existing user
         if User.query.filter_by(email=email).first():
             flash("Email already exists", "danger")
             return redirect("/signup")
@@ -288,6 +213,7 @@ def signup():
         # generate OTP
         otp = generate_otp()
 
+        # store temp user in session
         session["temp_user"] = {
             "username": username,
             "email": email,
@@ -297,7 +223,7 @@ def signup():
             "otp_expiry": (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         }
 
-        # email content
+        # send OTP email
         msg = Message(
             subject="We Capture OTP Verification",
             recipients=[email]
@@ -311,25 +237,27 @@ def signup():
 
         <h1 style="color:#d7ad4b;">{otp}</h1>
 
-        <p>This OTP is valid for 5 minutes.</p>
+        <p>Valid for 5 minutes.</p>
         """
 
-        # send email
-        success, error = send_signup_otp(email, username, otp)
+        success, error = send_email(msg)
 
         if success:
-            flash("OTP sent to your email successfully", "success")
+            flash("OTP sent to email", "success")
             return redirect(f"/verify_signup/{email}")
         else:
-            flash("Email failed. Check server logs.", "danger")
+            flash("Email sending failed", "danger")
             print("SMTP ERROR:\n", error)
             return redirect("/signup")
 
     return render_template("signup.html")
-# ---------------- VERIFY ----------------
+
+
+# ================= VERIFY OTP =================
 
 @app.route("/verify_signup/<email>", methods=["GET", "POST"])
 def verify_signup(email):
+
     temp_user = session.get("temp_user")
 
     if not temp_user or temp_user["email"] != email:
@@ -339,17 +267,19 @@ def verify_signup(email):
     if request.method == "POST":
         otp = request.form["otp"]
 
+        # wrong OTP
         if otp != temp_user["otp"]:
             flash("Invalid OTP", "danger")
             return redirect(request.url)
 
+        # expiry check
         expiry = datetime.fromisoformat(temp_user["otp_expiry"])
 
         if datetime.now(UTC) > expiry:
             flash("OTP expired", "danger")
             return redirect("/signup")
 
-        # ✅ CREATE USER NOW (after verification)
+        # create user
         user = User(
             username=temp_user["username"],
             email=temp_user["email"],
@@ -361,6 +291,7 @@ def verify_signup(email):
         db.session.add(user)
         db.session.commit()
 
+        # cleanup session
         session.pop("temp_user", None)
         session["user_id"] = user.id
 
@@ -369,47 +300,62 @@ def verify_signup(email):
 
     return render_template("verify_signup.html", email=email)
 
-# ---------------- LOGIN ----------------
+# ================= LOGIN =================
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
-        email = request.form["email"]
+
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         user = User.query.filter_by(email=email).first()
 
+        # invalid user or password
         if not user or not user.check_password(password):
             flash("Invalid credentials", "danger")
             return redirect("/login")
 
+        # not verified check
         if not user.is_verified:
-            flash("Verify your email first", "warning")
+            flash("Please verify your email first", "warning")
             return redirect("/login")
 
+        # login success
         session["user_id"] = user.id
+
+        flash("Login successful 🚀", "success")
         return redirect("/booking")
 
     return render_template("login.html")
 
+
+# ================= LOGOUT =================
+
 @app.route("/logout")
 def logout():
     session.clear()
+    flash("Logged out successfully", "success")
     return redirect("/")
 
-# ---------------- FORGOT PASSWORD ----------------
+# ================= FORGOT PASSWORD =================
 
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
+
     if request.method == "POST":
-        email = request.form["email"]
+
+        email = request.form["email"].strip().lower()
         user = User.query.filter_by(email=email).first()
 
         if not user:
             flash("User not found", "danger")
             return redirect("/forgot_password")
 
+        # generate OTP
         otp = generate_otp()
+
         user.otp = otp
         user.otp_expiry = datetime.now(UTC) + timedelta(minutes=5)
         db.session.commit()
@@ -420,33 +366,33 @@ def forgot_password():
         )
 
         msg.html = f"""
-        <h2>We Capture 🎥</h2>
-
-        <p>Password reset requested.</p>
+        <h2>Password Reset Request</h2>
 
         <p>Your OTP is:</p>
 
         <h1 style="color:#d7ad4b;">{otp}</h1>
 
-        <p>This OTP is valid for <b>5 minutes</b>.</p>
+        <p>Valid for 5 minutes only.</p>
         """
 
-        try:
-            send_reset_otp(email, otp)
-            print("📩 Reset OTP email sent")
-        except Exception as e:
-            print("❌ RESET EMAIL FAILED:")
-            print(traceback.format_exc())
-            flash(f"Email failed: {str(e)}", "danger")
+        success, error = send_email(msg)
+
+        if success:
+            flash("OTP sent to email", "success")
+        else:
+            print("RESET EMAIL ERROR:\n", error)
+            flash("Email sending failed", "danger")
 
         return redirect(f"/reset_password/{email}")
 
     return render_template("forgot_password.html")
 
-# ---------------- RESET ----------------
+
+# ================= RESET PASSWORD =================
 
 @app.route("/reset_password/<email>", methods=["GET", "POST"])
 def reset_password(email):
+
     user = User.query.filter_by(email=email).first()
 
     if not user:
@@ -454,160 +400,259 @@ def reset_password(email):
         return redirect("/forgot_password")
 
     if request.method == "POST":
+
         otp = request.form["otp"]
         password = request.form["password"]
 
+        # OTP mismatch
         if user.otp != otp:
             flash("Invalid OTP", "danger")
             return redirect(request.url)
 
+        # expiry check
         if user.otp_expiry < datetime.now(UTC):
             flash("OTP expired", "danger")
             return redirect("/forgot_password")
 
+        # update password
         user.set_password(password)
+
+        # clear OTP after use
+        user.otp = None
+        user.otp_expiry = None
+
         db.session.commit()
 
-        flash("Password updated")
+        flash("Password updated successfully 🔥")
         return redirect("/login")
 
     return render_template("reset_password.html")
 
-# ---------------- BOOKING ----------------
+# ================= BOOKING =================
 
 @app.route("/booking", methods=["GET", "POST"])
 @login_required
 def booking():
+
     PACKAGES = {
         "Signature Moment": {
             "price": "₹4,799",
-            "summary": "Perfect for a simple yet stylish delivery celebration.",
-            "features": [
-                "Celebration Cake",
-                "Flower Setup",
-                "Decorative Bow Styling",
-                "Cinematic Reel Capture"
-            ]
+            "summary": "Simple cinematic delivery experience",
         },
-
         "Elite Experience": {
             "price": "₹13,999",
-            "summary": "A grand upgrade with entry effects and celebration elements.",
-            "features": [
-                "Includes Signature Package",
-                "Red Carpet Entry",
-                "Fire Gun Effects",
-                "Paper Blast Celebration",
-                "Custom Name Board",
-                "Cinematic Reel",
-                "Gift Hamper"
-            ]
+            "summary": "Premium celebration upgrade",
         },
-
         "Legacy Arrival": {
             "price": "₹79,999",
-            "summary": "Premium cinematic experience with luxury entry and drone coverage.",
-            "features": [
-                "Includes Elite Package",
-                "Flash Entry Experience",
-                "Drone Shoot Coverage",
-                "Cinematic Reel",
-                "Custom Decoration Setup",
-                "Smoke Effects",
-                "Fire Gun",
-                "Paper Blast",
-                "Photo Frame",
-                "Premium Gift Hampers"
-            ]
+            "summary": "Luxury cinematic experience",
         },
-
         "Prestige VIP Experience": {
             "price": "₹1,79,000",
-            "summary": "Ultimate luxury delivery with venue, hosting, and grand celebrations.",
-            "features": [
-                "Includes Legacy Package",
-                "Open Ground / Farmhouse / Resort Venue",
-                "Grand Royal Welcome",
-                "Luxury Decoration Setup",
-                "Dedicated Host Assistance",
-                "Fun Games & Surprise Activities",
-                "Firecracker Show",
-                "Premium Cinematic Coverage",
-                "Fully Customized Experience"
-            ]
+            "summary": "Ultimate luxury event experience",
         }
     }
 
     if request.method == "POST":
-        booking = Booking(
-            user_id=session["user_id"],
-            full_name=request.form["full_name"],
-            phone=request.form["phone"],
-            email=request.form["email"],
-            showroom_name=request.form["showroom_name"],
-            showroom_address=request.form["showroom_address"],
-            delivery_location=request.form["delivery_location"],
-            salesperson_name=request.form["salesperson_name"],
-            salesperson_phone=request.form["salesperson_phone"],
-            delivery_date=datetime.strptime(request.form["delivery_date"], "%Y-%m-%d").date(),
-            delivery_time=datetime.strptime(request.form["delivery_time"], "%H:%M").time(),
-            package_name=request.form["package_name"]
-        )
-
-        db.session.add(booking)
-        db.session.commit()
-
-        # 🔥 ADMIN EMAIL
-        ADMIN_EMAIL = "official.wecapture@gmail.com"
-
-        msg = Message(
-            subject="🚗 New Booking Received - We Capture",
-            recipients=[ADMIN_EMAIL]
-        )
-
-        msg.html = f"""
-        <h2>New Booking Alert 🚗</h2>
-
-        <p><strong>Customer Name:</strong> {booking.full_name}</p>
-        <p><strong>Phone:</strong> {booking.phone}</p>
-        <p><strong>Email:</strong> {booking.email}</p>
-
-        <hr>
-
-        <p><strong>Showroom Name:</strong> {booking.showroom_name}</p>
-        <p><strong>Showroom Address:</strong> {booking.showroom_address}</p>
-        <p><strong>Delivery Location:</strong> {booking.delivery_location}</p>
-
-        <hr>
-
-        <p><strong>Salesperson:</strong> {booking.salesperson_name}</p>
-        <p><strong>Salesperson Phone:</strong> {booking.salesperson_phone}</p>
-
-        <hr>
-
-        <p><strong>Delivery Date:</strong> {booking.delivery_date}</p>
-        <p><strong>Delivery Time:</strong> {booking.delivery_time}</p>
-
-        <hr>
-
-        <p><strong>Package:</strong> {booking.package_name}</p>
-
-        <hr>
-        <p style="font-size:12px;">We Capture System</p>
-        """
 
         try:
-            send_booking_admin_email(booking)
-            print("📩 Admin email sent")
-            flash("Booking email sent", "success")
-        except Exception as e:
-            print("❌ BOOKING EMAIL FAILED:")
-            print(traceback.format_exc())
-            flash(f"Booking email failed: {str(e)}", "danger")
+            booking = Booking(
+                user_id=session["user_id"],
+                full_name=request.form["full_name"],
+                phone=request.form["phone"],
+                email=request.form["email"].strip().lower(),
 
-        return redirect(f"/booking_success/{booking.id}")
+                showroom_name=request.form["showroom_name"],
+                showroom_address=request.form["showroom_address"],
+                delivery_location=request.form["delivery_location"],
+
+                salesperson_name=request.form["salesperson_name"],
+                salesperson_phone=request.form["salesperson_phone"],
+
+                delivery_date=datetime.strptime(
+                    request.form["delivery_date"], "%Y-%m-%d"
+                ).date(),
+
+                delivery_time=datetime.strptime(
+                    request.form["delivery_time"], "%H:%M"
+                ).time(),
+
+                package_name=request.form["package_name"]
+            )
+
+            db.session.add(booking)
+            db.session.commit()
+
+            # ================= ADMIN EMAIL =================
+            msg = Message(
+                subject="🚗 New Booking Received - We Capture",
+                recipients=[ADMIN_EMAIL]
+            )
+
+            msg.html = f"""
+            <h2>New Booking 🚗</h2>
+
+            <p><b>Name:</b> {booking.full_name}</p>
+            <p><b>Phone:</b> {booking.phone}</p>
+            <p><b>Email:</b> {booking.email}</p>
+
+            <hr>
+
+            <p><b>Showroom:</b> {booking.showroom_name}</p>
+            <p><b>Address:</b> {booking.showroom_address}</p>
+
+            <hr>
+
+            <p><b>Delivery Location:</b> {booking.delivery_location}</p>
+
+            <hr>
+
+            <p><b>Salesperson:</b> {booking.salesperson_name}</p>
+            <p><b>Sales Phone:</b> {booking.salesperson_phone}</p>
+
+            <hr>
+
+            <p><b>Date:</b> {booking.delivery_date}</p>
+            <p><b>Time:</b> {booking.delivery_time}</p>
+
+            <hr>
+
+            <p><b>Package:</b> {booking.package_name}</p>
+            """
+
+            success, error = send_email(msg)
+
+            if success:
+                flash("Booking submitted successfully 🚀", "success")
+            else:
+                print("BOOKING EMAIL ERROR:\n", error)
+                flash("Booking saved but email failed", "warning")
+
+            return redirect(f"/booking_success/{booking.id}")
+
+        except Exception as e:
+            print("BOOKING ERROR:\n", traceback.format_exc())
+            flash("Something went wrong while booking", "danger")
+            return redirect("/booking")
 
     return render_template("booking.html", packages=PACKAGES)
+
+
+# ================= ADMIN DASHBOARD =================
+
+@app.route("/admin")
+@admin_required
+def admin_dashboard():
+    bookings = Booking.query.order_by(Booking.id.desc()).all()
+    media = Media.query.all()
+    return render_template("admin_dashboard.html", bookings=bookings, media=media)
+
+# ================= UPDATE STATUS =================
+
+@app.route("/admin/update_status/<int:id>/<status>")
+@admin_required
+def update_status(id, status):
+
+    booking = Booking.query.get_or_404(id)
+    booking.status = status
+    db.session.commit()
+
+    # EMAIL TO USER
+    msg = Message(
+        subject=f"We Capture - Booking {status}",
+        recipients=[booking.email]
+    )
+
+    if status == "Confirmed":
+        msg.html = f"""
+        <h2>Booking Confirmed ✅</h2>
+        <p>Hello {booking.full_name},</p>
+        <p>Your booking is confirmed.</p>
+        <p><b>Date:</b> {booking.delivery_date}</p>
+        <p><b>Time:</b> {booking.delivery_time}</p>
+        """
+
+    elif status == "Completed":
+        msg.html = f"""
+        <h2>Service Completed 🚚</h2>
+        <p>Hello {booking.full_name},</p>
+        <p>Your service is completed successfully.</p>
+        """
+
+    elif status == "Cancelled":
+        msg.html = f"""
+        <h2>Booking Cancelled ❌</h2>
+        <p>Hello {booking.full_name},</p>
+        <p>Your booking has been cancelled.</p>
+        """
+
+    else:
+        msg.html = f"<p>Status updated: {status}</p>"
+
+    success, error = send_email(msg)
+
+    if not success:
+        print("STATUS EMAIL ERROR:\n", error)
+
+    flash("Status updated successfully", "success")
+    return redirect("/admin")
+
+# ================= UPLOAD MEDIA =================
+
+@app.route("/admin/upload_media", methods=["GET", "POST"])
+@admin_required
+def upload_media():
+
+    if request.method == "POST":
+
+        file = request.files.get("file")
+        media_type = request.form.get("media_type")
+
+        if file and file.filename != "":
+
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+            file.save(filepath)
+
+            file_url = "/" + filepath.replace("\\", "/")
+
+            media = Media(
+                file_url=file_url,
+                media_type=media_type
+            )
+
+            db.session.add(media)
+            db.session.commit()
+
+            flash("Media uploaded successfully", "success")
+
+        return redirect("/admin/upload_media")
+
+    return render_template("upload_media.html")
+
+# ================= DELETE MEDIA =================
+
+@app.route("/admin/delete_media/<int:id>")
+@admin_required
+def delete_media(id):
+
+    media = Media.query.get_or_404(id)
+
+    try:
+        file_path = media.file_url.lstrip("/")  # FIXED PATH
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print("DELETE FILE ERROR:", e)
+
+    db.session.delete(media)
+    db.session.commit()
+
+    flash("Media deleted successfully", "success")
+    return redirect("/admin")
+
+
 
 # ---------------- SUCCESS ----------------
 
@@ -709,68 +754,11 @@ def admin_login():
 
     return render_template("admin_login.html")
 
-
-@app.route("/admin")
-@admin_required
-def admin_dashboard():
-    bookings = Booking.query.order_by(Booking.id.desc()).all()
-    media = Media.query.all()
-    return render_template("admin_dashboard.html", bookings=bookings, media=media)
-
-
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin_logged_in", None)
     flash("Logged out")
     return redirect("/admin/login")
-
-
-@app.route("/admin/update_status/<int:id>/<status>")
-@admin_required
-def update_status(id, status):
-    booking = Booking.query.get_or_404(id)
-
-    booking.status = status
-    db.session.commit()
-
-    # 🔥 SEND EMAIL TO USER
-    msg = Message(
-        subject=f"We Capture - Booking {status}",
-        recipients=[booking.email]
-    )
-
-    if status == "Confirmed":
-        msg.html = f"""
-        <h2>Booking Confirmed ✅</h2>
-        <p>Hello {booking.full_name},</p>
-        <p>Your booking has been <b>confirmed</b>.</p>
-        <p>Delivery Date: {booking.delivery_date}</p>
-        <p>Time: {booking.delivery_time}</p>
-        """
-
-    elif status == "Completed":
-        msg.html = f"""
-        <h2>Service Completed 🚚</h2>
-        <p>Hello {booking.full_name},</p>
-        <p>Your delivery service has been completed successfully.</p>
-        """
-
-    elif status == "Cancelled":
-        msg.html = f"""
-        <h2>Booking Cancelled ❌</h2>
-        <p>Hello {booking.full_name},</p>
-        <p>Your booking has been cancelled.</p>
-        """
-
-    try:
-        mail.send(msg)
-        print("📩 Status email sent")
-    except Exception as e:
-        print("⚠️ Email failed:", e)
-
-    flash("Status updated")
-    return redirect("/admin")
-
 
 
 @app.route("/send_query", methods=["POST"])
@@ -839,53 +827,6 @@ def send_query():
         flash("Failed to send OTP email", "danger")
 
     return redirect("/")
-
-
-
-@app.route("/admin/upload_media", methods=["GET", "POST"])
-@admin_required
-def upload_media():
-    if request.method == "POST":
-        file = request.files["file"]
-        media_type = request.form["media_type"]
-
-        if file:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-
-            file.save(filepath)
-
-            file_url = "/" + filepath.replace("\\", "/")
-
-            media = Media(file_url=file_url, media_type=media_type)
-            db.session.add(media)
-            db.session.commit()
-
-            flash("Media uploaded successfully!", "success")
-
-        return redirect("/admin/upload_media")
-
-    return render_template("upload_media.html")
-
-
-@app.route("/admin/delete_media/<int:id>")
-@admin_required
-def delete_media(id):
-    media = Media.query.get_or_404(id)
-
-    # delete file from folder
-    try:
-        file_path = media.file_url.replace("/", "\\")
-        if os.path.exists(file_path):
-            os.remove(file_path)
-    except:
-        pass
-
-    db.session.delete(media)
-    db.session.commit()
-
-    flash("Media deleted", "success")
-    return redirect("/admin")
 
 
 @app.route("/add_review", methods=["POST"])
