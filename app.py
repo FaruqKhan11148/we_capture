@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timedelta, UTC
 from functools import wraps
+import smtplib
 import traceback
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash
@@ -162,20 +163,47 @@ def home():
 
     return render_template("home.html", media=media, reviews=reviews)
 
+
 # ---------------- SIGNUP ----------------
+
+def send_email(msg):
+    try:
+        smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+        smtp.starttls()
+
+        smtp.login(
+            app.config["MAIL_USERNAME"],
+            app.config["MAIL_PASSWORD"]
+        )
+
+        smtp.sendmail(
+            app.config["MAIL_USERNAME"],
+            msg.recipients,
+            msg.as_string()
+        )
+
+        smtp.quit()
+        return True, None
+
+    except Exception:
+        return False, traceback.format_exc()
+
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
+
         username = request.form["username"]
         email = request.form["email"].strip().lower()
         phone = request.form["phone"]
         password = request.form["password"]
 
+        # check user exists
         if User.query.filter_by(email=email).first():
             flash("Email already exists", "danger")
             return redirect("/signup")
 
+        # generate OTP
         otp = generate_otp()
 
         session["temp_user"] = {
@@ -187,7 +215,7 @@ def signup():
             "otp_expiry": (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
         }
 
-        # EMAIL
+        # email content
         msg = Message(
             subject="We Capture OTP Verification",
             recipients=[email]
@@ -195,56 +223,27 @@ def signup():
 
         msg.html = f"""
         <h2>We Capture 🎥</h2>
-        <p>Hello,</p>
+        <p>Hello {username},</p>
 
-        <p>Thank you for signing up.</p>
-
-        <p><strong>Your OTP is:</strong></p>
+        <p>Your OTP is:</p>
 
         <h1 style="color:#d7ad4b;">{otp}</h1>
 
         <p>This OTP is valid for 5 minutes.</p>
-
-        <p>If you didn’t request this, ignore this email.</p>
         """
 
-        #try:
-            #mail.send(msg)   # ✅ REAL EMAIL SEND
-            #flash("OTP sent to your email successfully", "success")
-        #except Exception as e:
-            #print(e)
-            #flash("Failed to send query", "danger")
+        # send email
+        success, error = send_email(msg)
 
-        import smtplib
-        from email.mime.text import MIMEText
-
-        def send_email(msg):
-            try:
-                smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-                smtp.starttls()
-
-                smtp.login(
-                    app.config["MAIL_USERNAME"],
-                    app.config["MAIL_PASSWORD"]
-                )
-
-                smtp.sendmail(
-                    msg.sender,
-                    msg.recipients,
-                    msg.as_string()
-                )
-
-                smtp.quit()
-                return True, None
-
-            except Exception as e:
-                return False, str(e)
-
-        flash("OTP sent to your email. Please verify.")
-        return redirect(f"/verify_signup/{email}")
+        if success:
+            flash("OTP sent to your email successfully", "success")
+            return redirect(f"/verify_signup/{email}")
+        else:
+            flash("Email failed. Check server logs.", "danger")
+            print("SMTP ERROR:\n", error)
+            return redirect("/signup")
 
     return render_template("signup.html")
-
 # ---------------- VERIFY ----------------
 
 @app.route("/verify_signup/<email>", methods=["GET", "POST"])
@@ -351,10 +350,12 @@ def forgot_password():
         """
 
         try:
-            mail.send(msg)   # ✅ enable email sending
+            mail.send(msg)
+            print("📩 Reset OTP email sent")
         except Exception as e:
-            print("OTP:", otp)
-            print("Error:", e)
+            print("❌ RESET EMAIL FAILED:")
+            print(traceback.format_exc())
+            flash(f"Email failed: {str(e)}", "danger")
 
         return redirect(f"/reset_password/{email}")
 
@@ -477,8 +478,6 @@ def booking():
         # 🔥 ADMIN EMAIL
         ADMIN_EMAIL = "official.wecapture@gmail.com"
 
-        ADMIN_EMAIL = "official.wecapture@gmail.com"
-
         msg = Message(
             subject="🚗 New Booking Received - We Capture",
             recipients=[ADMIN_EMAIL]
@@ -518,8 +517,11 @@ def booking():
         try:
             mail.send(msg)
             print("📩 Admin email sent")
+            flash("Booking email sent", "success")
         except Exception as e:
-            print("⚠️ Admin email failed:", e)
+            print("❌ BOOKING EMAIL FAILED:")
+            print(traceback.format_exc())
+            flash(f"Booking email failed: {str(e)}", "danger")
 
         return redirect(f"/booking_success/{booking.id}")
 
@@ -613,7 +615,6 @@ def admin_login():
         email = request.form["email"]
         password = request.form["password"]
 
-        ADMIN_EMAIL = "official.wecapture@gmail.com"
         ADMIN_PASSWORD = "wecapture@2627"
 
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
@@ -696,8 +697,6 @@ def send_query():
     phone = request.form["phone"]
     location = request.form["location"]
     message = request.form["message"]
-
-    ADMIN_EMAIL = "official.wecapture@gmail.com"
 
     msg = Message(
         subject="New Query - We Capture",
