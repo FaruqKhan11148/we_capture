@@ -307,6 +307,40 @@ def login():
     return render_template("login.html")
 
 
+# ================= Query =================
+
+@app.route("/send_query", methods=["POST"])
+def send_query():
+    name = request.form.get("name")
+    email = request.form.get("email")
+    phone = request.form.get("phone")
+    location = request.form.get("location")
+    message = request.form.get("message")
+
+    try:
+        msg = Message(
+            subject="New Query - We Capture",
+            recipients=[ADMIN_EMAIL]
+        )
+
+        msg.html = f"""
+        <h2>New Query Received</h2>
+        <p><b>Name:</b> {name}</p>
+        <p><b>Email:</b> {email}</p>
+        <p><b>Phone:</b> {phone}</p>
+        <p><b>Location:</b> {location}</p>
+        <p><b>Message:</b> {message}</p>
+        """
+
+        mail.send(msg)
+        flash("Query sent successfully!", "success")
+
+    except Exception as e:
+        print("QUERY EMAIL ERROR:", e)
+        flash("Failed to send query", "danger")
+
+    return redirect("/")
+    
 # ================= LOGOUT =================
 
 @app.route("/logout")
