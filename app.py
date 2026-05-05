@@ -49,9 +49,91 @@ app.config["MAIL_SUPPRESS_SEND"] = False
 
 # NOW INIT MAIL
 mail = Mail(app)
-
 db = SQLAlchemy(app)
 
+
+# ---------------- EMAIL TEMPLATES ----------------
+
+def send_signup_otp(email, username, otp):
+    msg = Message(
+        subject="We Capture - Signup OTP",
+        recipients=[email]
+    )
+
+    msg.html = f"""
+    <h2>Welcome {username} 🎥</h2>
+    <p>Your OTP for signup is:</p>
+    <h1>{otp}</h1>
+    <p>Valid for 5 minutes.</p>
+    """
+
+    return send_email(msg)
+
+
+def send_reset_otp(email, otp):
+    msg = Message(
+        subject="We Capture - Reset OTP",
+        recipients=[email]
+    )
+
+    msg.html = f"""
+    <h2>Password Reset OTP</h2>
+    <h1>{otp}</h1>
+    <p>Valid for 5 minutes</p>
+    """
+
+    return send_email(msg)
+
+
+def send_booking_admin_email(booking):
+    ADMIN_EMAIL = "official.wecapture@gmail.com"
+
+    msg = Message(
+        subject="🚗 New Booking",
+        recipients=[ADMIN_EMAIL]
+    )
+
+    msg.html = f"""
+    <h2>New Booking</h2>
+    <p>{booking.full_name}</p>
+    <p>{booking.email}</p>
+    <p>{booking.package_name}</p>
+    """
+
+    return send_email(msg)
+
+
+def send_status_email(booking, status):
+    msg = Message(
+        subject=f"Booking {status}",
+        recipients=[booking.email]
+    )
+
+    msg.html = f"""
+    <h2>{status}</h2>
+    <p>{booking.full_name}</p>
+    """
+
+    return send_email(msg)
+
+
+def send_query_email(name, email, phone, location, message):
+    ADMIN_EMAIL = "official.wecapture@gmail.com"
+
+    msg = Message(
+        subject="New Query",
+        recipients=[ADMIN_EMAIL]
+    )
+
+    msg.html = f"""
+    <p>{name}</p>
+    <p>{email}</p>
+    <p>{phone}</p>
+    <p>{location}</p>
+    <p>{message}</p>
+    """
+
+    return send_email(msg)
 
 
 print("MAIL SERVER:", app.config["MAIL_SERVER"])
@@ -166,27 +248,27 @@ def home():
 
 # ---------------- SIGNUP ----------------
 
-def send_email(msg):
-    try:
-        smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
-        smtp.starttls()
+    def send_email(msg):
+        try:
+            smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+            smtp.starttls()
 
-        smtp.login(
-            app.config["MAIL_USERNAME"],
-            app.config["MAIL_PASSWORD"]
-        )
+            smtp.login(
+                app.config["MAIL_USERNAME"],
+                app.config["MAIL_PASSWORD"]
+            )
 
-        smtp.sendmail(
-            app.config["MAIL_USERNAME"],
-            msg.recipients,
-            msg.as_string()
-        )
+            smtp.sendmail(
+                app.config["MAIL_USERNAME"],
+                msg.recipients,
+                msg.as_string()
+            )
 
-        smtp.quit()
-        return True, None
+            smtp.quit()
+            return True, None
 
-    except Exception:
-        return False, traceback.format_exc()
+        except Exception:
+            return False, traceback.format_exc()
 
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -233,7 +315,7 @@ def signup():
         """
 
         # send email
-        success, error = send_email(msg)
+        success, error = send_signup_otp(email, username, otp)
 
         if success:
             flash("OTP sent to your email successfully", "success")
@@ -350,7 +432,7 @@ def forgot_password():
         """
 
         try:
-            mail.send(msg)
+            send_reset_otp(email, otp)
             print("📩 Reset OTP email sent")
         except Exception as e:
             print("❌ RESET EMAIL FAILED:")
@@ -515,7 +597,7 @@ def booking():
         """
 
         try:
-            mail.send(msg)
+            send_status_email(booking, status)
             print("📩 Admin email sent")
             flash("Booking email sent", "success")
         except Exception as e:
