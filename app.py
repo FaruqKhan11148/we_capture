@@ -178,6 +178,14 @@ def inject_user():
 
 import threading
 
+def send_mail_safe(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print("MAIL ERROR:", e)
+
+
 def send_async_mail(app, msg):
     with app.app_context():
         try:
@@ -189,24 +197,6 @@ def send_async_mail(app, msg):
         except Exception as e:
             print("MAIL ERROR:", e)
 
-
-import threading
-
-def send_mail_safe(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-        except Exception as e:
-            print("MAIL ERROR:", e)
-
-
-def send_mail_async(app, msg):
-    threading.Thread(
-        target=send_mail_safe,
-        args=(app, msg),
-        daemon=True
-    ).start()
-    
 @app.route("/send_query", methods=["POST"])
 def send_query():
 
@@ -231,11 +221,7 @@ def send_query():
     """
 
     # 🚀 fire-and-forget (NON BLOCKING)
-    threading.Thread(
-        target=send_mail_safe,
-        args=(app, msg),
-        daemon=True
-    ).start()
+    send_mail_async(app, msg)
 
     flash("Query sent successfully!", "success")
     return redirect("/")
@@ -361,11 +347,7 @@ def forgot_password():
         """
 
         try:
-            threading.Thread(
-                target=send_mail_safe,
-                args=(app, msg),
-                daemon=True
-            ).start()
+            send_mail_async(app, msg)
             flash("Reset OTP sent to email", "success")
 
         except Exception as e:
@@ -490,11 +472,7 @@ def booking():
             <p><b>Package:</b> {booking.package_name}</p>
             """
 
-            threading.Thread(
-                target=send_mail_safe,
-                args=(app, msg),
-                daemon=True
-            ).start()
+            send_mail_async(app, msg)
 
             flash("Booking successful!", "success")
             return redirect(f"/booking_success/{booking.id}")
@@ -604,11 +582,7 @@ def update_status(id, status):
         """
 
     try:
-        threading.Thread(
-            target=send_mail_safe,
-            args=(app, msg),
-            daemon=True
-        ).start()
+        send_mail_async(app, msg)
         flash("Status updated + email sent", "success")
     except Exception as e:
         print("STATUS EMAIL ERROR:", str(e))
