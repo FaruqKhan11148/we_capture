@@ -1,7 +1,39 @@
 import random
 import os
 import traceback
-from datetime import datetime, timedelta, UTC
+from datetime import timezone
+from dotenv import load_dotenv
+load_dotenv()
+
+# ================= MAIL HELPERS =================
+import threading
+
+def send_mail_safe(app, msg):
+    try:
+        with app.app_context():
+            print("📨 TRYING TO SEND EMAIL")
+            print("SMTP USER:", app.config["MAIL_USERNAME"])
+            print("PASSWORD EXISTS:", app.config["MAIL_PASSWORD"] is not None)
+            print("EMAIL TO:", msg.recipients)
+
+            mail.send(msg)
+
+            print("✅ EMAIL SENT SUCCESSFULLY")
+
+    except Exception as e:
+        print("❌ MAIL ERROR:", e)
+
+
+def send_mail_async(app, msg):
+    thread = threading.Thread(
+        target=send_mail_safe,
+        args=(app, msg),
+        daemon=True
+    )
+    thread.start()
+
+    
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from flask import Flask, render_template, request, redirect, session, flash
@@ -108,7 +140,7 @@ class Booking(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(UTC)
+        default=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -130,7 +162,7 @@ class Review(db.Model):
 
     created_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(UTC)
+        default=lambda: datetime.now(timezone.utc)
     )
 
     # ================= HELPERS =================
@@ -176,27 +208,6 @@ def inject_user():
 
 # ================= SIGNUP =================
 
-import threading
-
-def send_mail_safe(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-        except Exception as e:
-            print("MAIL ERROR:", e)
-
-
-def send_async_mail(app, msg):
-    with app.app_context():
-        try:
-            threading.Thread(
-            target=send_mail_safe,
-            args=(app, msg),
-            daemon=True
-        ).start()
-        except Exception as e:
-            print("MAIL ERROR:", e)
-
 @app.route("/send_query", methods=["POST"])
 def send_query():
 
@@ -226,6 +237,45 @@ def send_query():
     flash("Query sent successfully!", "success")
     return redirect("/")
 
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        email = request.form["email"].strip().lower()
+        phone = request.form["phone"]
+        password = request.form["password"]
+
+        # check duplicate user
+        if User.query.filter_by(email=email).first():
+            flash("User already exists", "danger")
+            return redirect("/signup")
+
+        otp = generate_otp()
+
+        session["temp_user"] = {
+            "username": username,
+            "email": email,
+            "phone": phone,
+            "password": password,
+            "otp": otp,
+            "otp_expiry": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+        }
+
+        msg = Message(
+            subject="OTP Verification - We Capture",
+            recipients=[email]
+        )
+
+        msg.html = f"<h1>Your OTP: {otp}</h1>"
+
+        send_mail_async(app, msg)
+
+        return redirect(f"/verify_signup/{email.strip()}")
+
+    return render_template("signup.html")
+
 # ================= VERIFY SIGNUP =================
 
 @app.route("/verify_signup/<email>", methods=["GET", "POST"])
@@ -247,7 +297,7 @@ def verify_signup(email):
 
         expiry = datetime.fromisoformat(temp_user["otp_expiry"])
 
-        if datetime.now(UTC) > expiry:
+        if datetime.now(timezone.utc) > expiry:
             flash("OTP expired", "danger")
             return redirect("/signup")
 
@@ -328,7 +378,7 @@ def forgot_password():
         otp = generate_otp()
 
         user.otp = otp
-        user.otp_expiry = datetime.now(UTC) + timedelta(minutes=5)
+        user.otp_expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
         db.session.commit()
 
         msg = Message(
@@ -379,7 +429,7 @@ def reset_password(email):
             flash("Invalid OTP", "danger")
             return redirect(request.url)
 
-        if not user.otp_expiry or user.otp_expiry < datetime.now(UTC):
+        if not user.otp_expiry or user.otp_expiry < datetime.now(timezone.utc):
             flash("OTP expired", "danger")
             return redirect("/forgot_password")
 
@@ -692,10 +742,10 @@ def delete_review(id):
 
 # ================= MAIN RUN (RENDER SAFE) =================
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
-    with app.app_context():
-        db.create_all()
+    #with app.app_context():
+        #db.create_all()
 
     # Render / production safe port handling
     port = int(os.environ.get("PORT", 5000))
