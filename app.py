@@ -597,7 +597,7 @@ def booking():
         """
 
         try:
-            send_status_email(booking, status)
+            send_booking_admin_email(booking)
             print("📩 Admin email sent")
             flash("Booking email sent", "success")
         except Exception as e:
@@ -697,7 +697,8 @@ def admin_login():
         email = request.form["email"]
         password = request.form["password"]
 
-        ADMIN_PASSWORD = "wecapture@2627"
+        ADMIN_EMAIL = "official.wecapture@gmail.com"
+        ADMIN_PASSWORD = "wecapture@2627"   
 
         if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
             session["admin_logged_in"] = True
