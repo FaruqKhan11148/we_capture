@@ -21,6 +21,9 @@ UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+@app.route("/")
+def home():
+    return render_template("home.html")
 
 # ================= DATABASE =================
 uri = os.getenv("DATABASE_URL")
@@ -701,4 +704,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
     app.run(host="0.0.0.0", port=port)
-    
