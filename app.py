@@ -37,6 +37,7 @@ app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
+app.config["MAIL_TIMEOUT"] = 10
 
 app.config["MAIL_USERNAME"] = "official.wecapture@gmail.com"
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")  # IMPORTANT
@@ -214,17 +215,30 @@ def signup():
             #print(e)
             #flash("Failed to send query", "danger")
 
-        try:
-            mail.send(msg)
-            flash("Email sent successfully ✅", "success")
+        import smtplib
+        from email.mime.text import MIMEText
 
-        except Exception as e:
-            error_details = traceback.format_exc()
+        def send_email(msg):
+            try:
+                smtp = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+                smtp.starttls()
 
-            print("🔥 EMAIL ERROR OCCURRED:")
-            print(error_details)
+                smtp.login(
+                    app.config["MAIL_USERNAME"],
+                    app.config["MAIL_PASSWORD"]
+                )
 
-            flash(f"Email failed ❌: {str(e)}", "danger")
+                smtp.sendmail(
+                    msg.sender,
+                    msg.recipients,
+                    msg.as_string()
+                )
+
+                smtp.quit()
+                return True, None
+
+            except Exception as e:
+                return False, str(e)
 
         flash("OTP sent to your email. Please verify.")
         return redirect(f"/verify_signup/{email}")
