@@ -24,13 +24,14 @@ def send_mail_safe(app, msg):
         print("❌ MAIL ERROR:", e)
 
 
-def send_mail_async(app, msg):
-    thread = threading.Thread(
-        target=send_mail_safe,
-        args=(app, msg),
-        daemon=True
-    )
-    thread.start()
+def send_mail_safe(app, msg):
+    with app.app_context():
+        try:
+            print("📨 TRYING TO SEND EMAIL")
+            mail.send(msg)
+            print("✅ EMAIL SENT SUCCESS")
+        except Exception as e:
+            print("❌ EMAIL ERROR:", str(e))
 
     
 from datetime import datetime, timedelta, timezone
@@ -231,8 +232,11 @@ def send_query():
     <p><b>Message:</b> {message}</p>
     """
 
-    # 🚀 fire-and-forget (NON BLOCKING)
-    send_mail_async(app, msg)
+    try:
+        mail.send(msg)
+        print("✅ EMAIL SENT SUCCESS")
+    except Exception as e:
+        print("❌ EMAIL ERROR:", str(e))
 
     flash("Query sent successfully!", "success")
     return redirect("/")
@@ -271,7 +275,11 @@ def signup():
 
         msg.html = f"<h1>Your OTP: {otp}</h1>"
 
-        send_mail_async(app, msg)
+        try:
+            mail.send(msg)
+            print("✅ EMAIL SENT SUCCESS")
+        except Exception as e:
+            print("❌ EMAIL ERROR:", str(e))
 
         return redirect(f"/verify_signup/{email.strip()}")
 
@@ -397,13 +405,17 @@ def forgot_password():
         <p>Valid for 5 minutes.</p>
         """
 
-        try:
-            send_mail_async(app, msg)
-            flash("Reset OTP sent to email", "success")
-
-        except Exception as e:
-            print("RESET EMAIL ERROR:", str(e))
-            flash("Email failed", "danger")
+        def send_mail_safe(app, msg):
+            with app.app_context():
+                try:
+                    print("📨 TRYING TO SEND EMAIL")
+                    mail.send(msg)
+                    print("✅ EMAIL SENT SUCCESS")
+                except Exception as e:
+                    print("❌ EMAIL ERROR:", str(e))
+        
+        send_mail_async(app, msg)
+        flash("Reset OTP sent to email", "success")
 
         return redirect(f"/reset_password/{email}")
 
@@ -532,7 +544,11 @@ def booking():
             <p><b>Package:</b> {booking.package_name}</p>
             """
 
-            send_mail_async(app, msg)
+            try:
+                mail.send(msg)
+                print("✅ EMAIL SENT SUCCESS")
+            except Exception as e:
+                print("❌ EMAIL ERROR:", str(e))
 
             flash("Booking successful!", "success")
             return redirect(f"/booking_success/{booking.id}")
@@ -616,6 +632,7 @@ def update_status(id, status):
 
     msg = Message(
         subject=f"We Capture - Booking {status}",
+        sender=app.config["MAIL_USERNAME"],   # ✅ IMPORTANT
         recipients=[booking.email]
     )
 
@@ -640,14 +657,16 @@ def update_status(id, status):
         <p>Your booking was cancelled.</p>
         """
 
+    # ✅ FIXED INDENTATION
     try:
-        send_mail_async(app, msg)
+        mail.send(msg)
+        print("✅ STATUS EMAIL SENT")
         flash("Status updated + email sent", "success")
     except Exception as e:
-        print("STATUS EMAIL ERROR:", str(e))
+        print("❌ STATUS EMAIL ERROR:", str(e))
         flash("Status updated but email failed", "warning")
 
-    return redirect("/admin")
+    return redirect("/admin")   # ✅ you were missing this
 
 
 # ================= MEDIA UPLOAD =================
