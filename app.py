@@ -5,24 +5,32 @@ from datetime import timezone
 from dotenv import load_dotenv
 load_dotenv()
 
-def send_mail(msg):
+
+import requests
+import os
+
+def send_email_resend(to, subject, html):
     try:
-        mail.send(msg)
-        print("✅ EMAIL SENT")
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {os.getenv('RESEND_API_KEY')}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "We Capture <onboarding@resend.dev>",  # temp sender
+                "to": [to],
+                "subject": subject,
+                "html": html
+            }
+        )
+
+        print("📨 RESEND STATUS:", response.status_code)
+        print("📨 RESEND RESPONSE:", response.text)
+
     except Exception as e:
-        print("❌ EMAIL ERROR:", str(e))
+        print("❌ RESEND ERROR:", str(e))
 
-
-def send_mail_async(app, msg):
-    print("📨 TO:", msg.recipients)
-    print("📨 SUBJECT:", msg.subject)
-    print("📨 SENDER:", msg.sender)
-    print("📨 USERNAME:", app.config["MAIL_USERNAME"])
-    def send():
-        with app.app_context():
-            send_mail(msg)
-
-    threading.Thread(target=send).start()
 
 
 # ================= MAIL HELPERS =================
@@ -36,7 +44,7 @@ def send_mail_safe(app, msg):
             # ✅ USE msg.recipients instead of booking.email
             to_email = msg.recipients[0]
 
-            send_mail_async(app, msg)
+            send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
 
             print("✅ EMAIL SENT SUCCESS")
 
@@ -85,7 +93,7 @@ app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
 
 app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
-app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
+app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")  # Render ENV
 app.config["MAIL_DEFAULT_SENDER"] = app.config["MAIL_USERNAME"]
 
 app.config["MAIL_DEBUG"] = True
@@ -243,7 +251,7 @@ def send_query():
     """
 
     try:
-        send_mail_async(app, msg)
+        send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
         print("✅ EMAIL SENT SUCCESS")
     except Exception as e:
         print("❌ EMAIL ERROR:", str(e))
@@ -279,7 +287,7 @@ def signup():
 
         msg = Message(
             subject="OTP Verification - We Capture",
-            sender=("We Capture", "official.wecapture@gmail.com"),
+            #sender=("We Capture", "official.wecapture@gmail.com"),
             recipients=[email]
         )
 
@@ -546,7 +554,7 @@ def booking():
             """
 
             try:
-                send_mail_async(app, msg)
+                send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
                 print("✅ EMAIL SENT SUCCESS")
             except Exception as e:
                 print("❌ EMAIL ERROR:", str(e))
@@ -660,7 +668,7 @@ def update_status(id, status):
 
     # ✅ FIXED INDENTATION
     try:
-        send_mail_async(app, msg)
+        send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
         print("✅ STATUS EMAIL SENT")
         flash("Status updated + email sent", "success")
     except Exception as e:
