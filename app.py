@@ -5,9 +5,7 @@ from datetime import timezone
 from dotenv import load_dotenv
 load_dotenv()
 
-
 import requests
-import os
 
 def send_email_resend(to, subject, html):
     try:
@@ -25,11 +23,11 @@ def send_email_resend(to, subject, html):
             }
         )
 
-        print("📨 RESEND STATUS:", response.status_code)
-        print("📨 RESEND RESPONSE:", response.text)
+        print("RESEND STATUS:", response.status_code)
+        print("RESEND RESPONSE:", response.text)
 
     except Exception as e:
-        print("❌ RESEND ERROR:", str(e))
+        print("RESEND ERROR:", str(e))
 
 
 
@@ -39,17 +37,17 @@ import threading
 def send_mail_safe(app, msg):
     with app.app_context():
         try:
-            print("📨 TRYING EMAIL")
+            print("TRYING EMAIL")
 
-            # ✅ USE msg.recipients instead of booking.email
+            # USE msg.recipients instead of booking.email
             to_email = msg.recipients[0]
 
             send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
 
-            print("✅ EMAIL SENT SUCCESS")
+            print("EMAIL SENT SUCCESS")
 
         except Exception as e:
-            print("❌ EMAIL ERROR:", str(e))
+            print("EMAIL ERROR:", str(e))
 
     
 from datetime import datetime, timedelta, timezone
@@ -225,7 +223,7 @@ def admin_required(f):
 def inject_user():
     return dict(current_user=get_user())
 
-# ================= SIGNUP =================
+# ================= Query =================
 
 @app.route("/send_query", methods=["POST"])
 def send_query():
@@ -252,16 +250,17 @@ def send_query():
 
     try:
         send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
-        print("✅ EMAIL SENT SUCCESS")
+        print("EMAIL SENT SUCCESS")
     except Exception as e:
-        print("❌ EMAIL ERROR:", str(e))
+        print("EMAIL ERROR:", str(e))
 
     flash("Query sent successfully!", "success")
     return redirect("/")
 
+# ================= SIGNUP =================
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
-
     if request.method == "POST":
 
         username = request.form["username"]
@@ -269,37 +268,26 @@ def signup():
         phone = request.form["phone"]
         password = request.form["password"]
 
-        # check duplicate user
         if User.query.filter_by(email=email).first():
-            flash("User already exists", "danger")
+            flash("Email already exists", "danger")
             return redirect("/signup")
 
-        otp = generate_otp()
-
-        session["temp_user"] = {
-            "username": username,
-            "email": email,
-            "phone": phone,
-            "password": password,
-            "otp": otp,
-            "otp_expiry": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
-        }
-
-        msg = Message(
-            subject="OTP Verification - We Capture",
-            #sender=("We Capture", "official.wecapture@gmail.com"),
-            recipients=[email]
+        user = User(
+            username=username,
+            email=email,
+            phone=phone,
+            is_verified=True
         )
 
-        msg.html = f"<h1>Your OTP: {otp}</h1>"
+        user.set_password(password)
 
-        try:
-            send_mail_async(app, msg)
-            print("✅ EMAIL SENT SUCCESS")
-        except Exception as e:
-            print("❌ EMAIL ERROR:", str(e))
+        db.session.add(user)
+        db.session.commit()
 
-        return redirect(f"/verify_signup/{email.strip()}")
+        session["user_id"] = user.id
+
+        flash("Account created successfully 🎉", "success")
+        return redirect("/booking")
 
     return render_template("signup.html")
 
@@ -344,7 +332,7 @@ def verify_signup(email):
         session.pop("temp_user", None)
         session["user_id"] = user.id
 
-        flash("Account created successfully 🎉")
+        flash("Account created successfully")
         return redirect("/booking")
 
     return render_template("verify_signup.html", email=email)
@@ -529,12 +517,12 @@ def booking():
             ADMIN_EMAIL = "official.wecapture@gmail.com"
 
             msg = Message(
-                subject="🚗 New Booking Received",
+                subject="New Booking Received",
                 recipients=[ADMIN_EMAIL]
             )
 
             msg.html = f"""
-            <h2>New Booking 🚗</h2>
+            <h2>New Booking</h2>
 
             <p><b>Name:</b> {booking.full_name}</p>
             <p><b>Phone:</b> {booking.phone}</p>
@@ -555,9 +543,9 @@ def booking():
 
             try:
                 send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
-                print("✅ EMAIL SENT SUCCESS")
+                print("EMAIL SENT SUCCESS")
             except Exception as e:
-                print("❌ EMAIL ERROR:", str(e))
+                print("EMAIL ERROR:", str(e))
 
             flash("Booking successful!", "success")
             return redirect(f"/booking_success/{booking.id}")
@@ -641,41 +629,41 @@ def update_status(id, status):
 
     msg = Message(
         subject=f"We Capture - Booking {status}",
-        sender=app.config["MAIL_USERNAME"],   # ✅ IMPORTANT
+        sender=app.config["MAIL_USERNAME"],   #IMPORTANT
         recipients=[booking.email]
     )
 
     if status == "Confirmed":
         msg.html = f"""
-        <h2>Booking Confirmed ✅</h2>
+        <h2>Booking Confirmed</h2>
         <p>Hello {booking.full_name},</p>
         <p>Your booking is confirmed.</p>
         """
 
     elif status == "Completed":
         msg.html = f"""
-        <h2>Service Completed 🚚</h2>
+        <h2>Service Completed</h2>
         <p>Hello {booking.full_name},</p>
         <p>Your service is completed.</p>
         """
 
     elif status == "Cancelled":
         msg.html = f"""
-        <h2>Booking Cancelled ❌</h2>
+        <h2>Booking Cancelled</h2>
         <p>Hello {booking.full_name},</p>
         <p>Your booking was cancelled.</p>
         """
 
-    # ✅ FIXED INDENTATION
+    # FIXED INDENTATION
     try:
         send_email_resend("official.wecapture@gmail.com", msg.subject, msg.html)
-        print("✅ STATUS EMAIL SENT")
+        print("STATUS EMAIL SENT")
         flash("Status updated + email sent", "success")
     except Exception as e:
-        print("❌ STATUS EMAIL ERROR:", str(e))
+        print("STATUS EMAIL ERROR:", str(e))
         flash("Status updated but email failed", "warning")
 
-    return redirect("/admin")   # ✅ you were missing this
+    return redirect("/admin")   # you were missing this
 
 
 # ================= MEDIA UPLOAD =================

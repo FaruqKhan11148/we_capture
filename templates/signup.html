@@ -2,27 +2,81 @@
 {% block content %}
 
 <div class="auth-shell">
-<div class="auth-panel">
+    <div class="auth-panel">
 
-<h2>Signup</h2>
+        <h2>Create Account</h2>
 
-<form method="POST" class="form-stack">
+        <form method="POST" class="form-stack" onsubmit="return validatePasswords()">
 
-<input name="username" placeholder="Full Name" required>
-<input name="email" placeholder="Email" required>
-<input name="phone" placeholder="Phone" required>
+            <input type="text" name="username" placeholder="Full Name" required>
 
-<!-- PASSWORD WITH TOGGLE -->
-<div class="password-wrapper">
-    <input type="password" name="password" id="signupPassword" placeholder="Password" required>
-    <span class="toggle-password" onclick="togglePassword('signupPassword')">👁️</span>
+            <input type="email" name="email" placeholder="Email Address" required>
+
+            <input type="text" name="phone" placeholder="Phone Number" required>
+
+            <!-- PASSWORD -->
+            <div class="password-wrapper">
+                <input type="password"
+                       name="password"
+                       id="signupPassword"
+                       placeholder="Password"
+                       required>
+
+                <span class="toggle-password"
+                      onclick="togglePassword('signupPassword')">
+                    👁️
+                </span>
+            </div>
+
+            <!-- CONFIRM PASSWORD -->
+            <div class="password-wrapper">
+                <input type="password"
+                       id="confirmPassword"
+                       placeholder="Confirm Password"
+                       required>
+
+                <span class="toggle-password"
+                      onclick="togglePassword('confirmPassword')">
+                    👁️
+                </span>
+            </div>
+
+            <!-- ERROR MESSAGE -->
+            <p id="passwordError"
+               style="color:red; display:none; font-size:14px;">
+               Passwords do not match
+            </p>
+
+            <button type="submit" class="btn btn-gold">
+                Create Account
+            </button>
+
+            <p class="auth-switch">
+                Already have an account?
+                <a href="/login">Login</a>
+            </p>
+
+        </form>
+
+    </div>
 </div>
 
-<button class="btn btn-gold">Send OTP</button>
+<!-- PASSWORD MATCH SCRIPT -->
+<script>
+function validatePasswords() {
 
-</form>
+    let password = document.getElementById("signupPassword").value;
+    let confirmPassword = document.getElementById("confirmPassword").value;
+    let error = document.getElementById("passwordError");
 
-</div>
-</div>
+    if (password !== confirmPassword) {
+        error.style.display = "block";
+        return false;
+    }
+
+    error.style.display = "none";
+    return true;
+}
+</script>
 
 {% endblock %}
