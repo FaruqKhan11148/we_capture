@@ -461,20 +461,59 @@ def reset_password(email):
 PACKAGES = {
     "Signature Moment": {
         "price": "₹4,799",
-        "summary": "Simple stylish delivery celebration.",
+        "summary": "Perfect for a simple yet stylish delivery celebration.",
         "features": [
             "Celebration Cake",
             "Flower Setup",
-            "Cinematic Reel"
+            "Decorative Bow Styling",
+            "Cinematic Reel Capture"
         ]
     },
+
     "Elite Experience": {
         "price": "₹13,999",
-        "summary": "Grand entry experience.",
+        "summary": "A grand upgrade with entry effects and celebration elements.",
         "features": [
+            "Includes Signature Package",
             "Red Carpet Entry",
-            "Fire Effects",
-            "Cinematic Reel"
+            "Fire Gun Effects",
+            "Paper Blast Celebration",
+            "Custom Name Board",
+            "Cinematic Reel",
+            "Gift Hamper"
+        ]
+    },
+
+    "Legacy Arrival": {
+        "price": "₹79,999",
+        "summary": "Premium cinematic experience with luxury entry and drone coverage.",
+        "features": [
+            "Includes Elite Package",
+            "Flash Entry Experience",
+            "Drone Shoot Coverage",
+            "Cinematic Reel",
+            "Custom Decoration Setup",
+            "Smoke Effects",
+            "Fire Gun",
+            "Paper Blast",
+            "Photo Frame",
+            "Premium Gift Hampers"
+        ]
+    },
+
+    "Prestige VIP Experience": {
+        "price": "₹1,79,000",
+        "summary": "Ultimate luxury delivery with venue, hosting, and grand celebrations.",
+        "features": [
+            "Includes Legacy Package",
+            "Open Ground / Farmhouse / Resort Venue",
+            "Grand Royal Welcome",
+            "Luxury Decoration Setup",
+            "Dedicated Host Assistance",
+            "Fun Games & Surprise Activities",
+            "Firecracker Show",
+            "Premium Cinematic Coverage",
+            "Fully Customized Experience"
         ]
     }
 }
