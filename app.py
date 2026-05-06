@@ -14,6 +14,10 @@ def send_mail(msg):
 
 
 def send_mail_async(app, msg):
+    print("📨 TO:", msg.recipients)
+    print("📨 SUBJECT:", msg.subject)
+    print("📨 SENDER:", msg.sender)
+    print("📨 USERNAME:", app.config["MAIL_USERNAME"])
     def send():
         with app.app_context():
             send_mail(msg)
